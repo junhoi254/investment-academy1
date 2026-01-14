@@ -384,16 +384,11 @@ function ChatRoom({ user, onLogin, onLogout }) {
       </header>
 
       <div className="messages-container">
-        {messages.length === 0 && !user && room?.is_free && (
+        {/* 메시지가 없을 때 안내 메시지 (버튼 제거됨) */}
+        {messages.length === 0 && room?.is_free && (
           <div className="login-prompt-message">
             <p>📢 무료 채팅방입니다</p>
             <p>일타훈장님과 서브관리자의 리딩을 확인하세요!</p>
-            <button 
-              className="inline-login-button"
-              onClick={() => navigate('/login')}
-            >
-              로그인하고 유료방 이용하기 →
-            </button>
           </div>
         )}
         
@@ -416,21 +411,6 @@ function ChatRoom({ user, onLogin, onLogout }) {
           </div>
         ))}
         <div ref={messagesEndRef} />
-        
-        {/* 로그인 유도 메시지 (채팅방 하단) */}
-        {!user && room?.is_free && messages.length > 0 && (
-          <div className="bottom-login-prompt">
-            <div className="prompt-content">
-              <p>🔒 <strong>유료 채팅방</strong>에서 더 많은 리딩을 받아보세요!</p>
-              <button 
-                className="prompt-login-button"
-                onClick={() => navigate('/login')}
-              >
-                로그인하기
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* 메시지 입력란 */}
