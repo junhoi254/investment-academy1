@@ -498,12 +498,22 @@ async def websocket_chat(websocket: WebSocket, room_id: int, token: str = "", db
     
     try:
         # 토큰 검증
-        if not token:
+        if not token or token == "undefined" or token == "null":
             await websocket.send_json({"type": "error", "message": "토큰이 필요합니다"})
             await websocket.close(code=1008)
             return
+        
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        except jwt.ExpiredSignatureError:
+            await websocket.send_json({"type": "error", "message": "토큰이 만료되었습니다"})
+            await websocket.close(code=1008)
+            return
+        except jwt.InvalidTokenError as e:
+            await websocket.send_json({"type": "error", "message": "유효하지 않은 토큰입니다"})
+            await websocket.close(code=1008)
+            return
             
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
         
         user = db.query(models.User).filter(models.User.id == user_id).first()
@@ -572,13 +582,20 @@ async def websocket_chat(websocket: WebSocket, room_id: int, token: str = "", db
     except WebSocketDisconnect:
         if user and user_id:
             manager.disconnect(websocket, str(room_id), user_id)
-            await manager.send_message({
-                "type": "system",
-                "message": f"{user.name}님이 퇴장하셨습니다.",
-                "timestamp": datetime.utcnow().isoformat()
-            }, str(room_id))
+            try:
+                await manager.send_message({
+                    "type": "system",
+                    "message": f"{user.name}님이 퇴장하셨습니다.",
+                    "timestamp": datetime.utcnow().isoformat()
+                }, str(room_id))
+            except:
+                pass
     except Exception as e:
         print(f"WebSocket error: {e}")
+        try:
+            await websocket.close(code=1011)
+        except:
+            pass
         if user_id:
             manager.disconnect(websocket, str(room_id), user_id)
 
