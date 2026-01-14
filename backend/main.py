@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException, status, UploadFile, File
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException, status, UploadFile, File, Header
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -39,11 +39,11 @@ app.add_middleware(
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # JWT 설정
-SECRET_KEY = "your-secret-key-change-in-production"
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24시간
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
 
 # WebSocket 연결 관리자
 class ConnectionManager:
@@ -60,19 +60,26 @@ class ConnectionManager:
 
     def disconnect(self, websocket: WebSocket, room_id: str, user_id: int):
         if room_id in self.active_connections:
-            self.active_connections[room_id].remove(websocket)
+            if websocket in self.active_connections[room_id]:
+                self.active_connections[room_id].remove(websocket)
         if user_id in self.user_connections:
             del self.user_connections[user_id]
 
     async def send_message(self, message: dict, room_id: str):
         if room_id in self.active_connections:
             for connection in self.active_connections[room_id]:
-                await connection.send_json(message)
+                try:
+                    await connection.send_json(message)
+                except:
+                    pass
 
     async def broadcast(self, message: dict):
         for connections in self.active_connections.values():
             for connection in connections:
-                await connection.send_json(message)
+                try:
+                    await connection.send_json(message)
+                except:
+                    pass
 
 manager = ConnectionManager()
 
@@ -108,6 +115,10 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         detail="인증 정보가 유효하지 않습니다",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    
+    if not token:
+        raise credentials_exception
+        
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: int = payload.get("sub")
@@ -130,6 +141,20 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
             raise HTTPException(status_code=403, detail="회원 기간이 만료되었습니다")
     
     return user
+
+async def get_current_user_optional(token: Optional[str] = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> Optional[models.User]:
+    """선택적 사용자 인증 (없어도 됨)"""
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: int = payload.get("sub")
+        if user_id is None:
+            return None
+        user = db.query(models.User).filter(models.User.id == user_id).first()
+        return user if user and user.is_approved else None
+    except:
+        return None
 
 async def get_admin_user(current_user: models.User = Depends(get_current_user)):
     if current_user.role != "admin":
@@ -199,7 +224,8 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
             "id": user.id,
             "phone": user.phone,
             "name": user.name,
-            "role": user.role
+            "role": user.role,
+            "expiry_date": user.expiry_date.isoformat() if user.expiry_date else None
         }
     }
 
@@ -346,11 +372,11 @@ async def create_room(
     db.refresh(new_room)
     return new_room
 
-@app.get("/api/rooms/{room_id}/messages", response_model=List[schemas.MessageResponse])
+@app.get("/api/rooms/{room_id}/messages")
 async def get_room_messages(
     room_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[models.User] = Depends(lambda token=Depends(oauth2_scheme): get_current_user_optional(token, db))
+    current_user: Optional[models.User] = Depends(get_current_user_optional)
 ):
     """채팅방 메시지 조회 (무료방은 로그인 불필요)"""
     room = db.query(models.Room).filter(models.Room.id == room_id).first()
@@ -361,25 +387,31 @@ async def get_room_messages(
     if not room.is_free and not current_user:
         raise HTTPException(status_code=401, detail="로그인이 필요합니다")
     
+    # 메시지 조회 (유저 정보 포함)
     messages = db.query(models.Message).filter(
         models.Message.room_id == room_id
     ).order_by(models.Message.created_at.desc()).limit(100).all()
     
-    return messages[::-1]  # 오래된 순서로
-
-async def get_current_user_optional(token: Optional[str], db: Session):
-    """선택적 사용자 인증 (없어도 됨)"""
-    if not token:
-        return None
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: int = payload.get("sub")
-        if user_id is None:
-            return None
-        user = db.query(models.User).filter(models.User.id == user_id).first()
-        return user if user and user.is_approved else None
-    except:
-        return None
+    # 메시지를 오래된 순서로 정렬하고 유저 정보 포함
+    result = []
+    for msg in reversed(messages):
+        user = db.query(models.User).filter(models.User.id == msg.user_id).first()
+        result.append({
+            "id": msg.id,
+            "room_id": msg.room_id,
+            "user_id": msg.user_id,
+            "content": msg.content,
+            "message_type": msg.message_type,
+            "file_url": msg.file_url,
+            "file_name": msg.file_name,
+            "created_at": msg.created_at.isoformat(),
+            "user": {
+                "name": user.name if user else "알 수 없음",
+                "role": user.role if user else "member"
+            }
+        })
+    
+    return result
 
 # ==================== 파일 업로드 API ====================
 
@@ -458,6 +490,9 @@ async def upload_file(
 @app.websocket("/ws/chat/{room_id}")
 async def websocket_chat(websocket: WebSocket, room_id: int, token: str, db: Session = Depends(get_db)):
     """채팅 WebSocket"""
+    user = None
+    user_id = None
+    
     try:
         # 토큰 검증
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -498,7 +533,9 @@ async def websocket_chat(websocket: WebSocket, room_id: int, token: str, db: Ses
                 room_id=room_id,
                 user_id=user_id,
                 content=data.get("message"),
-                message_type=data.get("type", "text")
+                message_type=data.get("type", "text"),
+                file_url=data.get("file_url"),
+                file_name=data.get("file_name")
             )
             db.add(message)
             db.commit()
@@ -513,20 +550,27 @@ async def websocket_chat(websocket: WebSocket, room_id: int, token: str, db: Ses
                 "user_role": user.role,
                 "content": message.content,
                 "message_type": message.message_type,
+                "file_url": message.file_url,
+                "file_name": message.file_name,
                 "timestamp": message.created_at.isoformat()
             }, str(room_id))
             
     except WebSocketDisconnect:
-        manager.disconnect(websocket, str(room_id), user_id)
-        await manager.send_message({
-            "type": "system",
-            "message": f"{user.name}님이 퇴장하셨습니다.",
-            "timestamp": datetime.utcnow().isoformat()
-        }, str(room_id))
+        if user and user_id:
+            manager.disconnect(websocket, str(room_id), user_id)
+            await manager.send_message({
+                "type": "system",
+                "message": f"{user.name}님이 퇴장하셨습니다.",
+                "timestamp": datetime.utcnow().isoformat()
+            }, str(room_id))
     except Exception as e:
         print(f"WebSocket error: {e}")
+        if user_id:
+            manager.disconnect(websocket, str(room_id), user_id)
 
 # ==================== MT4 연동 API ====================
+
+MT4_API_KEY = os.getenv("MT4_API_KEY", "your-mt4-api-key")
 
 @app.post("/api/mt4/position")
 async def receive_mt4_position(
@@ -535,8 +579,8 @@ async def receive_mt4_position(
     db: Session = Depends(get_db)
 ):
     """MT4 포지션 수신"""
-    # API 키 검증 (실제 환경에서는 DB에 저장된 키와 비교)
-    if api_key != "your-mt4-api-key":
+    # API 키 검증
+    if api_key != MT4_API_KEY:
         raise HTTPException(status_code=403, detail="Invalid API key")
     
     # 해외선물 채팅방 찾기
@@ -561,9 +605,10 @@ async def receive_mt4_position(
     """.strip()
     
     # 시스템 메시지로 저장
+    admin = db.query(models.User).filter(models.User.role == "admin").first()
     message = models.Message(
         room_id=room.id,
-        user_id=1,  # 시스템 사용자
+        user_id=admin.id if admin else 1,  # 관리자 ID
         content=message_content,
         message_type="signal"
     )
@@ -594,6 +639,18 @@ async def get_news(
         return {"news": news_list}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# ==================== 헬스 체크 ====================
+
+@app.get("/")
+async def root():
+    """헬스 체크"""
+    return {"status": "ok", "message": "투자학당 API 서버 작동 중"}
+
+@app.get("/health")
+async def health_check():
+    """헬스 체크"""
+    return {"status": "healthy"}
 
 # ==================== 초기 데이터 생성 ====================
 
