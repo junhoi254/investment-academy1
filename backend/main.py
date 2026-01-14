@@ -488,27 +488,41 @@ async def upload_file(
 # ==================== WebSocket ====================
 
 @app.websocket("/ws/chat/{room_id}")
-async def websocket_chat(websocket: WebSocket, room_id: int, token: str, db: Session = Depends(get_db)):
+async def websocket_chat(websocket: WebSocket, room_id: int, token: str = "", db: Session = Depends(get_db)):
     """채팅 WebSocket"""
+    # 먼저 WebSocket 연결 수락
+    await websocket.accept()
+    
     user = None
     user_id = None
     
     try:
         # 토큰 검증
+        if not token:
+            await websocket.send_json({"type": "error", "message": "토큰이 필요합니다"})
+            await websocket.close(code=1008)
+            return
+            
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
         
         user = db.query(models.User).filter(models.User.id == user_id).first()
         if not user or not user.is_approved:
+            await websocket.send_json({"type": "error", "message": "인증 실패"})
             await websocket.close(code=1008)
             return
         
         room = db.query(models.Room).filter(models.Room.id == room_id).first()
         if not room:
+            await websocket.send_json({"type": "error", "message": "채팅방을 찾을 수 없습니다"})
             await websocket.close(code=1008)
             return
         
-        await manager.connect(websocket, str(room_id), user_id)
+        # 연결 관리자에 등록 (accept는 이미 했으므로 connect에서 accept 제거 필요)
+        if str(room_id) not in manager.active_connections:
+            manager.active_connections[str(room_id)] = []
+        manager.active_connections[str(room_id)].append(websocket)
+        manager.user_connections[user_id] = websocket
         
         # 접속 알림
         await manager.send_message({
