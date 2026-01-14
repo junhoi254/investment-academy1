@@ -340,3 +340,144 @@
     padding: 10px;
   }
 }
+
+/* 로그인 버튼 스타일 */
+.login-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.login-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.free-badge {
+  background: #28a745;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: 10px;
+}
+
+/* 로그인 유도 메시지 */
+.login-prompt-message {
+  text-align: center;
+  padding: 40px 20px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  max-width: 500px;
+  margin: 50px auto;
+}
+
+.login-prompt-message p {
+  color: #333;
+  font-size: 16px;
+  margin: 10px 0;
+}
+
+.login-prompt-message p:first-child {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 15px;
+}
+
+.inline-login-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 12px 32px;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 16px;
+  border: none;
+  cursor: pointer;
+  margin-top: 20px;
+  transition: all 0.3s ease;
+}
+
+.inline-login-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.bottom-login-prompt {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  margin: 20px 0;
+  max-width: 100%;
+}
+
+.bottom-login-prompt .prompt-content {
+  color: white;
+}
+
+.bottom-login-prompt p {
+  margin: 0 0 15px 0;
+  font-size: 16px;
+}
+
+.prompt-login-button {
+  background: white;
+  color: #667eea;
+  padding: 10px 30px;
+  border-radius: 25px;
+  font-weight: 700;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.prompt-login-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.5);
+}
+
+/* 로그인하지 않은 사용자 입력창 */
+.no-user-input {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 12px 20px;
+  background: #f8f9fa;
+  border-radius: 25px;
+  border: 2px dashed #ddd;
+}
+
+.no-user-input span {
+  color: #666;
+  font-size: 14px;
+  flex: 1;
+}
+
+.input-login-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 10px 25px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.input-login-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}

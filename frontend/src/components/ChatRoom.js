@@ -23,7 +23,7 @@ const EMOJIS = [
   '🗨️', '🗯️', '💭', '💤', '👋', '🎉', '🎊', '🎈', '🎁', '🏆'
 ];
 
-function ChatRoom({ user, onLogout }) {
+function ChatRoom({ user, onLogin, onLogout }) {
   const { roomId } = useParams();
   const navigate = useNavigate();
   const [room, setRoom] = useState(null);
@@ -41,14 +41,18 @@ function ChatRoom({ user, onLogout }) {
   useEffect(() => {
     loadRoomInfo();
     loadMessages();
-    connectWebSocket();
+    
+    // 로그인한 사용자만 WebSocket 연결
+    if (user) {
+      connectWebSocket();
+    }
 
     return () => {
       if (ws) {
         ws.close();
       }
     };
-  }, [roomId]);
+  }, [roomId, user]);
 
   useEffect(() => {
     scrollToBottom();
@@ -56,14 +60,24 @@ function ChatRoom({ user, onLogout }) {
 
   const loadRoomInfo = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const endpoint = room?.is_free ? 'free' : 'paid';
-      const response = await axios.get(`${API_URL}/api/rooms/${endpoint}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      });
+      // 무료방/유료방 모두 조회
+      const freeRoomsRes = await axios.get(`${API_URL}/api/rooms/free`);
+      const currentRoom = freeRoomsRes.data.find(r => r.id === parseInt(roomId));
       
-      const currentRoom = response.data.find(r => r.id === parseInt(roomId));
-      setRoom(currentRoom);
+      if (currentRoom) {
+        setRoom(currentRoom);
+        return;
+      }
+
+      // 유료방인 경우 로그인 필요
+      if (user) {
+        const token = localStorage.getItem('token');
+        const paidRoomsRes = await axios.get(`${API_URL}/api/rooms/paid`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const paidRoom = paidRoomsRes.data.find(r => r.id === parseInt(roomId));
+        setRoom(paidRoom);
+      }
     } catch (error) {
       console.error('채팅방 정보 로딩 실패:', error);
     }
@@ -73,17 +87,21 @@ function ChatRoom({ user, onLogout }) {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(`${API_URL}/api/rooms/${roomId}/messages`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
       setMessages(response.data);
     } catch (error) {
       console.error('메시지 로딩 실패:', error);
+      // 로그인 필요한 경우
+      if (error.response?.status === 401) {
+        setMessages([]);
+      }
     }
   };
 
   const connectWebSocket = () => {
+    if (!user) return;
+    
     const token = localStorage.getItem('token');
     const websocket = new WebSocket(`${WS_URL}/ws/chat/${roomId}?token=${token}`);
 
@@ -135,9 +153,11 @@ function ChatRoom({ user, onLogout }) {
       setConnected(false);
       
       // 재연결 시도
-      setTimeout(() => {
-        connectWebSocket();
-      }, 3000);
+      if (user) {
+        setTimeout(() => {
+          connectWebSocket();
+        }, 3000);
+      }
     };
 
     websocket.onerror = (error) => {
@@ -149,6 +169,11 @@ function ChatRoom({ user, onLogout }) {
 
   const sendMessage = (e) => {
     e.preventDefault();
+    
+    if (!user) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
     
     if (!newMessage.trim() || !ws || !connected) return;
 
@@ -175,6 +200,11 @@ function ChatRoom({ user, onLogout }) {
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    if (!user) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
 
     // 이미지 파일인지 확인
     if (!file.type.startsWith('image/')) {
@@ -216,6 +246,11 @@ function ChatRoom({ user, onLogout }) {
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    if (!user) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
 
     setUploadingFile(true);
 
@@ -271,7 +306,7 @@ function ChatRoom({ user, onLogout }) {
   };
 
   const canSendMessage = () => {
-    if (!room) return false;
+    if (!room || !user) return false;
     // 관리자와 직원(서브관리자)만 메시지 전송 가능
     if (user.role === 'member') return false;
     return true;
@@ -327,21 +362,45 @@ function ChatRoom({ user, onLogout }) {
         </button>
         <div className="room-title">
           <h2>{room?.name || '채팅방'}</h2>
-          <span className={`connection-status ${connected ? 'connected' : 'disconnected'}`}>
-            {connected ? '● 연결됨' : '○ 연결 안됨'}
-          </span>
+          {room?.is_free && <span className="free-badge">무료</span>}
+          {user && (
+            <span className={`connection-status ${connected ? 'connected' : 'disconnected'}`}>
+              {connected ? '● 연결됨' : '○ 연결 안됨'}
+            </span>
+          )}
         </div>
         <div className="header-actions">
-          <span className="user-name">{user.name}</span>
-          <button className="logout-button" onClick={onLogout}>로그아웃</button>
+          {user ? (
+            <>
+              <span className="user-name">{user.name}</span>
+              <button className="logout-button" onClick={onLogout}>로그아웃</button>
+            </>
+          ) : (
+            <button className="login-button" onClick={() => navigate('/login')}>
+              로그인
+            </button>
+          )}
         </div>
       </header>
 
       <div className="messages-container">
+        {messages.length === 0 && !user && room?.is_free && (
+          <div className="login-prompt-message">
+            <p>📢 무료 채팅방입니다</p>
+            <p>일타훈장님과 서브관리자의 리딩을 확인하세요!</p>
+            <button 
+              className="inline-login-button"
+              onClick={() => navigate('/login')}
+            >
+              로그인하고 유료방 이용하기 →
+            </button>
+          </div>
+        )}
+        
         {messages.map((message, index) => (
           <div 
             key={message.id || index} 
-            className={`message ${message.message_type} ${message.user_id === user.id ? 'own' : ''}`}
+            className={`message ${message.message_type} ${user && message.user_id === user.id ? 'own' : ''}`}
           >
             {message.message_type === 'system' ? (
               <div className="system-message">{message.content}</div>
@@ -357,94 +416,129 @@ function ChatRoom({ user, onLogout }) {
           </div>
         ))}
         <div ref={messagesEndRef} />
+        
+        {/* 로그인 유도 메시지 (채팅방 하단) */}
+        {!user && room?.is_free && messages.length > 0 && (
+          <div className="bottom-login-prompt">
+            <div className="prompt-content">
+              <p>🔒 <strong>유료 채팅방</strong>에서 더 많은 리딩을 받아보세요!</p>
+              <button 
+                className="prompt-login-button"
+                onClick={() => navigate('/login')}
+              >
+                로그인하기
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
+      {/* 메시지 입력란 */}
       <form className="message-input-container" onSubmit={sendMessage}>
-        {/* 파일 업로드 버튼 */}
-        {canSendMessage() && (
-          <div className="upload-buttons">
-            <input
-              type="file"
-              ref={imageInputRef}
-              accept="image/*"
-              style={{ display: 'none' }}
-              onChange={handleImageUpload}
-            />
-            <input
-              type="file"
-              ref={fileInputRef}
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.zip"
-              style={{ display: 'none' }}
-              onChange={handleFileUpload}
-            />
-            
-            <button
+        {/* 로그인하지 않은 사용자 */}
+        {!user && (
+          <div className="no-user-input">
+            <span>💬 메시지를 보내려면 로그인이 필요합니다</span>
+            <button 
               type="button"
-              className="upload-btn"
-              onClick={() => imageInputRef.current?.click()}
-              disabled={uploadingImage || !connected}
-              title="이미지 업로드"
+              className="input-login-button"
+              onClick={() => navigate('/login')}
             >
-              {uploadingImage ? '⏳' : '🖼️'}
-            </button>
-            
-            <button
-              type="button"
-              className="upload-btn"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingFile || !connected}
-              title="파일 업로드"
-            >
-              {uploadingFile ? '⏳' : '📎'}
-            </button>
-            
-            <button
-              type="button"
-              className="emoji-btn"
-              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              disabled={!connected}
-              title="이모티콘"
-            >
-              😊
+              로그인
             </button>
           </div>
         )}
+        
+        {/* 로그인한 사용자 */}
+        {user && (
+          <>
+            {/* 파일 업로드 버튼 */}
+            {canSendMessage() && (
+              <div className="upload-buttons">
+                <input
+                  type="file"
+                  ref={imageInputRef}
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={handleImageUpload}
+                />
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.zip"
+                  style={{ display: 'none' }}
+                  onChange={handleFileUpload}
+                />
+                
+                <button
+                  type="button"
+                  className="upload-btn"
+                  onClick={() => imageInputRef.current?.click()}
+                  disabled={uploadingImage || !connected}
+                  title="이미지 업로드"
+                >
+                  {uploadingImage ? '⏳' : '🖼️'}
+                </button>
+                
+                <button
+                  type="button"
+                  className="upload-btn"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingFile || !connected}
+                  title="파일 업로드"
+                >
+                  {uploadingFile ? '⏳' : '📎'}
+                </button>
+                
+                <button
+                  type="button"
+                  className="emoji-btn"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  disabled={!connected}
+                  title="이모티콘"
+                >
+                  😊
+                </button>
+              </div>
+            )}
 
-        {/* 이모티콘 선택기 */}
-        {showEmojiPicker && canSendMessage() && (
-          <div className="emoji-picker">
-            {EMOJIS.map((emoji, index) => (
-              <button
-                key={index}
-                type="button"
-                className="emoji-item"
-                onClick={() => handleEmojiClick(emoji)}
-              >
-                {emoji}
-              </button>
-            ))}
-          </div>
+            {/* 이모티콘 선택기 */}
+            {showEmojiPicker && canSendMessage() && (
+              <div className="emoji-picker">
+                {EMOJIS.map((emoji, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    className="emoji-item"
+                    onClick={() => handleEmojiClick(emoji)}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <input
+              type="text"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder={
+                canSendMessage() 
+                  ? "메시지를 입력하세요..." 
+                  : "관리자와 서브관리자만 메시지를 보낼 수 있습니다"
+              }
+              disabled={!canSendMessage() || !connected}
+              className="message-input"
+            />
+            <button 
+              type="submit" 
+              className="send-button"
+              disabled={!newMessage.trim() || !canSendMessage() || !connected}
+            >
+              전송
+            </button>
+          </>
         )}
-
-        <input
-          type="text"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder={
-            canSendMessage() 
-              ? "메시지를 입력하세요..." 
-              : "관리자와 서브관리자만 메시지를 보낼 수 있습니다"
-          }
-          disabled={!canSendMessage() || !connected}
-          className="message-input"
-        />
-        <button 
-          type="submit" 
-          className="send-button"
-          disabled={!newMessage.trim() || !canSendMessage() || !connected}
-        >
-          전송
-        </button>
       </form>
     </div>
   );

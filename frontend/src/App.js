@@ -42,7 +42,7 @@ function App() {
     <Router>
       <div className="App">
         <Routes>
-          {/* 공개 라우트 */}
+          {/* 공개 라우트 - 로그인 전에도 접근 가능 */}
           <Route 
             path="/login" 
             element={user ? <Navigate to="/chat" /> : <Login onLogin={handleLogin} />} 
@@ -52,14 +52,14 @@ function App() {
             element={user ? <Navigate to="/chat" /> : <Register />} 
           />
           
-          {/* 보호된 라우트 */}
+          {/* 채팅 라우트 - 로그인 없이도 무료방 접근 가능 */}
           <Route 
             path="/chat" 
-            element={user ? <ChatList user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
+            element={<ChatList user={user} onLogin={handleLogin} onLogout={handleLogout} />} 
           />
           <Route 
             path="/chat/:roomId" 
-            element={user ? <ChatRoom user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
+            element={<ChatRoom user={user} onLogin={handleLogin} onLogout={handleLogout} />} 
           />
           
           {/* 관리자 라우트 */}

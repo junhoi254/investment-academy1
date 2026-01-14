@@ -349,19 +349,37 @@ async def create_room(
 @app.get("/api/rooms/{room_id}/messages", response_model=List[schemas.MessageResponse])
 async def get_room_messages(
     room_id: int,
-    current_user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Optional[models.User] = Depends(lambda token=Depends(oauth2_scheme): get_current_user_optional(token, db))
 ):
-    """채팅방 메시지 조회"""
+    """채팅방 메시지 조회 (무료방은 로그인 불필요)"""
     room = db.query(models.Room).filter(models.Room.id == room_id).first()
     if not room:
         raise HTTPException(status_code=404, detail="채팅방을 찾을 수 없습니다")
+    
+    # 유료방인 경우 로그인 필수
+    if not room.is_free and not current_user:
+        raise HTTPException(status_code=401, detail="로그인이 필요합니다")
     
     messages = db.query(models.Message).filter(
         models.Message.room_id == room_id
     ).order_by(models.Message.created_at.desc()).limit(100).all()
     
     return messages[::-1]  # 오래된 순서로
+
+async def get_current_user_optional(token: Optional[str], db: Session):
+    """선택적 사용자 인증 (없어도 됨)"""
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: int = payload.get("sub")
+        if user_id is None:
+            return None
+        user = db.query(models.User).filter(models.User.id == user_id).first()
+        return user if user and user.is_approved else None
+    except:
+        return None
 
 # ==================== 파일 업로드 API ====================
 
