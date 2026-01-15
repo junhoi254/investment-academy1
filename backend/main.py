@@ -413,6 +413,39 @@ async def get_room_messages(
     
     return result
 
+# ==================== 메시지 삭제 API ====================
+
+@app.delete("/api/messages/{message_id}")
+async def delete_message(
+    message_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """메시지 삭제 (관리자/서브관리자만 가능)"""
+    # 권한 확인
+    if current_user.role not in ['admin', 'staff']:
+        raise HTTPException(status_code=403, detail="관리자와 서브관리자만 삭제할 수 있습니다")
+    
+    # 메시지 찾기
+    message = db.query(models.Message).filter(models.Message.id == message_id).first()
+    if not message:
+        raise HTTPException(status_code=404, detail="메시지를 찾을 수 없습니다")
+    
+    # 파일이 있으면 파일도 삭제
+    if message.file_url:
+        file_path = UPLOAD_DIR / message.file_url.replace("/uploads/", "")
+        if file_path.exists():
+            try:
+                file_path.unlink()
+            except:
+                pass
+    
+    # 메시지 삭제
+    db.delete(message)
+    db.commit()
+    
+    return {"message": "삭제되었습니다", "deleted_id": message_id}
+
 # ==================== 파일 업로드 API ====================
 
 @app.post("/api/upload/image")

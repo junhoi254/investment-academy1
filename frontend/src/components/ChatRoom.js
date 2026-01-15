@@ -330,6 +330,27 @@ function ChatRoom({ user, onLogout }) {
     return true;
   };
 
+  const canDeleteMessage = () => {
+    if (!user) return false;
+    return user.role === 'admin' || user.role === 'staff';
+  };
+
+  const deleteMessage = async (messageId) => {
+    if (!window.confirm('이 메시지를 삭제하시겠습니까?')) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_URL}/api/messages/${messageId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // 메시지 목록에서 제거
+      setMessages(prev => prev.filter(msg => msg.id !== messageId));
+    } catch (error) {
+      alert('삭제 실패: ' + (error.response?.data?.detail || error.message));
+    }
+  };
+
   const renderMessage = (message) => {
     if (message.message_type === 'image') {
       return (
@@ -339,7 +360,17 @@ function ChatRoom({ user, onLogout }) {
             alt={message.file_name}
             onClick={() => window.open(`${API_URL}${message.file_url}`, '_blank')}
           />
-          <div className="message-time">{formatTime(message.created_at)}</div>
+          <div className="message-footer">
+            <span className="message-time">{formatTime(message.created_at)}</span>
+            {canDeleteMessage() && (
+              <button 
+                className="delete-btn"
+                onClick={() => deleteMessage(message.id)}
+              >
+                🗑️
+              </button>
+            )}
+          </div>
         </div>
       );
     } else if (message.message_type === 'file') {
@@ -353,7 +384,17 @@ function ChatRoom({ user, onLogout }) {
           >
             📎 {message.file_name}
           </a>
-          <div className="message-time">{formatTime(message.created_at)}</div>
+          <div className="message-footer">
+            <span className="message-time">{formatTime(message.created_at)}</span>
+            {canDeleteMessage() && (
+              <button 
+                className="delete-btn"
+                onClick={() => deleteMessage(message.id)}
+              >
+                🗑️
+              </button>
+            )}
+          </div>
         </div>
       );
     } else {
@@ -365,6 +406,14 @@ function ChatRoom({ user, onLogout }) {
               {getUserRoleBadge(message.user?.role).text}
             </span>
             <span className="message-time">{formatTime(message.created_at)}</span>
+            {canDeleteMessage() && (
+              <button 
+                className="delete-btn"
+                onClick={() => deleteMessage(message.id)}
+              >
+                🗑️
+              </button>
+            )}
           </div>
           <div className="message-content">{message.content}</div>
         </>

@@ -212,6 +212,33 @@
   margin-left: auto;
 }
 
+.message-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 5px;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  opacity: 0.5;
+  transition: all 0.2s ease;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.delete-btn:hover {
+  opacity: 1;
+  background: rgba(220, 53, 69, 0.1);
+}
+
+.message-header .delete-btn {
+  margin-left: 8px;
+}
+
 .message-content {
   background: white;
   padding: 12px 16px;
