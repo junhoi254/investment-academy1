@@ -286,6 +286,27 @@
   line-height: 1.5;
 }
 
+/* 유튜브 임베드 */
+.youtube-embed {
+  margin-top: 10px;
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  padding-bottom: 225px;
+  height: 0;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.youtube-embed iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+}
+
 .message.own .message-content {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;

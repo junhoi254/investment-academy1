@@ -461,6 +461,25 @@ function ChatRoom({ user, onLogout }) {
     }
   };
 
+  // 유튜브 링크에서 비디오 ID 추출
+  const extractYoutubeId = (url) => {
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\s?]+)/,
+      /youtube\.com\/shorts\/([^&\s?]+)/
+    ];
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) return match[1];
+    }
+    return null;
+  };
+
+  // 메시지 내용에서 유튜브 링크 찾기
+  const findYoutubeLinks = (content) => {
+    const urlPattern = /(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)[^\s]+)/g;
+    return content.match(urlPattern) || [];
+  };
+
   const renderMessage = (message) => {
     if (message.message_type === 'image') {
       return (
@@ -508,6 +527,8 @@ function ChatRoom({ user, onLogout }) {
         </div>
       );
     } else {
+      const youtubeLinks = findYoutubeLinks(message.content || '');
+      
       return (
         <>
           <div className="message-header">
@@ -526,6 +547,24 @@ function ChatRoom({ user, onLogout }) {
             )}
           </div>
           <div className="message-content">{message.content}</div>
+          {/* 유튜브 임베드 */}
+          {youtubeLinks.map((link, index) => {
+            const videoId = extractYoutubeId(link);
+            if (videoId) {
+              return (
+                <div key={index} className="youtube-embed">
+                  <iframe
+                    src={`https://www.youtube.com/embed/${videoId}`}
+                    title="YouTube video"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              );
+            }
+            return null;
+          })}
         </>
       );
     }
