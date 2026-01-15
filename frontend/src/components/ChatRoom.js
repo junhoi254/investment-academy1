@@ -36,6 +36,7 @@ function ChatRoom({ user, onLogout }) {
   const [uploadingFile, setUploadingFile] = useState(false);
   const [viewerCount, setViewerCount] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [linkPreviews, setLinkPreviews] = useState({});
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
@@ -480,6 +481,45 @@ function ChatRoom({ user, onLogout }) {
     return content.match(urlPattern) || [];
   };
 
+  // 일반 URL 찾기 (유튜브 제외)
+  const findRegularLinks = (content) => {
+    const urlPattern = /(https?:\/\/[^\s]+)/g;
+    const allLinks = content.match(urlPattern) || [];
+    return allLinks.filter(link => !extractYoutubeId(link));
+  };
+
+  // 링크 미리보기 가져오기
+  const fetchLinkPreview = async (url, messageId) => {
+    if (linkPreviews[`${messageId}-${url}`]) return;
+    
+    try {
+      const response = await axios.get(`${API_URL}/api/link-preview`, {
+        params: { url }
+      });
+      
+      if (!response.data.error && response.data.image) {
+        setLinkPreviews(prev => ({
+          ...prev,
+          [`${messageId}-${url}`]: response.data
+        }));
+      }
+    } catch (error) {
+      console.log('Link preview fetch failed:', error);
+    }
+  };
+
+  // 메시지에서 링크 미리보기 로드
+  useEffect(() => {
+    messages.forEach(msg => {
+      if (msg.content && msg.message_type !== 'image' && msg.message_type !== 'file') {
+        const links = findRegularLinks(msg.content);
+        links.forEach(link => {
+          fetchLinkPreview(link, msg.id);
+        });
+      }
+    });
+  }, [messages]);
+
   const renderMessage = (message) => {
     if (message.message_type === 'image') {
       return (
@@ -561,6 +601,31 @@ function ChatRoom({ user, onLogout }) {
                     allowFullScreen
                   />
                 </div>
+              );
+            }
+            return null;
+          })}
+          {/* 일반 링크 미리보기 */}
+          {findRegularLinks(message.content || '').map((link, index) => {
+            const preview = linkPreviews[`${message.id}-${link}`];
+            if (preview && preview.image) {
+              return (
+                <a 
+                  key={index} 
+                  href={link} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="link-preview-card"
+                >
+                  <img src={preview.image} alt={preview.title} className="link-preview-image" />
+                  <div className="link-preview-info">
+                    <div className="link-preview-title">{preview.title}</div>
+                    {preview.description && (
+                      <div className="link-preview-description">{preview.description}</div>
+                    )}
+                    <div className="link-preview-site">{preview.site_name || new URL(link).hostname}</div>
+                  </div>
+                </a>
               );
             }
             return null;

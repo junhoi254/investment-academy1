@@ -12,6 +12,8 @@ import json
 import os
 import uuid
 from pathlib import Path
+import aiohttp
+from bs4 import BeautifulSoup
 
 from database import get_db, engine
 import models
@@ -44,6 +46,16 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24시간
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
+
+# 전화번호 뒷 4자리 또는 표시 이름 반환
+def get_display_name(user):
+    """관리자/서브관리자는 '일타훈장님', 일반 회원은 전화번호 뒷 4자리"""
+    if user.role in ['admin', 'staff']:
+        return "일타훈장님"
+    else:
+        # 전화번호에서 숫자만 추출하고 뒷 4자리
+        phone_digits = ''.join(filter(str.isdigit, user.phone))
+        return phone_digits[-4:] if len(phone_digits) >= 4 else user.name
 
 # WebSocket 연결 관리자
 class ConnectionManager:
@@ -448,7 +460,7 @@ async def get_room_messages(
             "file_name": msg.file_name,
             "created_at": msg.created_at.isoformat(),
             "user": {
-                "name": user.name if user else "알 수 없음",
+                "name": get_display_name(user) if user else "알 수 없음",
                 "role": user.role if user else "member"
             }
         })
@@ -560,6 +572,52 @@ async def upload_file(
         "type": "file"
     }
 
+# ==================== 링크 미리보기 API ====================
+
+@app.get("/api/link-preview")
+async def get_link_preview(url: str):
+    """URL에서 Open Graph 메타 데이터 추출"""
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=5)) as response:
+                if response.status != 200:
+                    return {"error": "Failed to fetch URL"}
+                
+                html = await response.text()
+                soup = BeautifulSoup(html, 'html.parser')
+                
+                # Open Graph 메타 데이터 추출
+                og_title = soup.find('meta', property='og:title')
+                og_description = soup.find('meta', property='og:description')
+                og_image = soup.find('meta', property='og:image')
+                og_site_name = soup.find('meta', property='og:site_name')
+                
+                # 일반 메타 태그 폴백
+                title = og_title['content'] if og_title else (soup.title.string if soup.title else '')
+                description = og_description['content'] if og_description else ''
+                image = og_image['content'] if og_image else ''
+                site_name = og_site_name['content'] if og_site_name else ''
+                
+                # 상대 경로 이미지를 절대 경로로 변환
+                if image and not image.startswith('http'):
+                    from urllib.parse import urljoin
+                    image = urljoin(url, image)
+                
+                return {
+                    "title": title[:100] if title else '',
+                    "description": description[:200] if description else '',
+                    "image": image,
+                    "site_name": site_name,
+                    "url": url
+                }
+    except Exception as e:
+        print(f"Link preview error: {e}")
+        return {"error": str(e)}
+
 # ==================== WebSocket ====================
 
 @app.websocket("/ws/chat/{room_id}")
@@ -609,12 +667,7 @@ async def websocket_chat(websocket: WebSocket, room_id: int, token: str = "", db
         manager.active_connections[str(room_id)].append(websocket)
         manager.user_connections[user_id] = websocket
         
-        # 접속 알림
-        await manager.send_message({
-            "type": "system",
-            "message": f"{user.name}님이 입장하셨습니다.",
-            "timestamp": datetime.utcnow().isoformat()
-        }, str(room_id))
+        # 입장 알림 제거됨
         
         while True:
             data = await websocket.receive_json()
@@ -645,7 +698,7 @@ async def websocket_chat(websocket: WebSocket, room_id: int, token: str = "", db
                 "type": "message",
                 "id": message.id,
                 "user_id": user.id,
-                "user_name": user.name,
+                "user_name": get_display_name(user),
                 "user_role": user.role,
                 "content": message.content,
                 "message_type": message.message_type,
@@ -657,14 +710,7 @@ async def websocket_chat(websocket: WebSocket, room_id: int, token: str = "", db
     except WebSocketDisconnect:
         if user and user_id:
             manager.disconnect(websocket, str(room_id), user_id)
-            try:
-                await manager.send_message({
-                    "type": "system",
-                    "message": f"{user.name}님이 퇴장하셨습니다.",
-                    "timestamp": datetime.utcnow().isoformat()
-                }, str(room_id))
-            except:
-                pass
+            # 퇴장 알림 제거됨
     except Exception as e:
         print(f"WebSocket error: {e}")
         try:
