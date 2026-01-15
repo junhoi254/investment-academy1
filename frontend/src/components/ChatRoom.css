@@ -476,7 +476,39 @@
   background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
 }
 
-/* 비로그인 사용자 입력창 */
+/* 면책 슬라이드 */
+.disclaimer-slide {
+  width: 100%;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 25px;
+  padding: 15px 0;
+}
+
+.disclaimer-track {
+  display: flex;
+  width: fit-content;
+  animation: slideLeft 20s linear infinite;
+}
+
+.disclaimer-text {
+  color: #ffd700;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+}
+
+@keyframes slideLeft {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* 비로그인 사용자 입력창 (제거됨) */
 .no-user-input {
   width: 100%;
   display: flex;

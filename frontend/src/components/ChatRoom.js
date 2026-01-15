@@ -619,19 +619,17 @@ function ChatRoom({ user, onLogout }) {
 
       {/* 메시지 입력란 */}
       <form className="message-input-container" onSubmit={sendMessage}>
-        {/* 관리자/서브관리자가 아닌 경우 */}
+        {/* 일반 회원 또는 비로그인 - 면책 슬라이드 */}
         {(!user || user.role === 'member') && (
-          <div className="no-user-input">
-            <span>💬 메시지를 보내려면 로그인이 필요합니다</span>
-            {!user && (
-              <button 
-                type="button"
-                className="input-login-button"
-                onClick={() => navigate('/login')}
-              >
-                로그인
-              </button>
-            )}
+          <div className="disclaimer-slide">
+            <div className="disclaimer-track">
+              <span className="disclaimer-text">
+                ⚠️ 당사는 투자 정보 제공에 최선을 다하지만, 투자 결정에 따른 결과에 대해서는 책임지지 않습니다. 투자에 대한 책임은 전적으로 투자자 본인에게 있습니다. &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+              </span>
+              <span className="disclaimer-text">
+                ⚠️ 당사는 투자 정보 제공에 최선을 다하지만, 투자 결정에 따른 결과에 대해서는 책임지지 않습니다. 투자에 대한 책임은 전적으로 투자자 본인에게 있습니다. &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+              </span>
+            </div>
           </div>
         )}
         
