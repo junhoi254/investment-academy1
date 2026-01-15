@@ -35,6 +35,7 @@ function ChatRoom({ user, onLogout }) {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [viewerCount, setViewerCount] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
@@ -306,6 +307,115 @@ function ChatRoom({ user, onLogout }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // 드래그 앤 드롭 핸들러
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    if (canDeleteMessage()) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    if (!canDeleteMessage()) {
+      alert('관리자와 서브관리자만 파일을 업로드할 수 있습니다.');
+      return;
+    }
+
+    const files = e.dataTransfer.files;
+    if (files.length === 0) return;
+
+    const file = files[0];
+    
+    // 이미지인지 확인
+    if (file.type.startsWith('image/')) {
+      await uploadDroppedImage(file);
+    } else {
+      await uploadDroppedFile(file);
+    }
+  };
+
+  const uploadDroppedImage = async (file) => {
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    const ext = '.' + file.name.split('.').pop().toLowerCase();
+    
+    if (!allowedExtensions.includes(ext)) {
+      alert('지원하지 않는 이미지 형식입니다.');
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API_URL}/api/upload/image`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      if (ws && connected) {
+        ws.send(JSON.stringify({
+          message: `[이미지: ${response.data.filename}]`,
+          type: 'image',
+          file_url: response.data.url,
+          file_name: response.data.filename
+        }));
+      }
+    } catch (error) {
+      alert('이미지 업로드 실패: ' + (error.response?.data?.detail || error.message));
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const uploadDroppedFile = async (file) => {
+    const allowedExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.txt', '.zip'];
+    const ext = '.' + file.name.split('.').pop().toLowerCase();
+    
+    if (!allowedExtensions.includes(ext)) {
+      alert('지원하지 않는 파일 형식입니다.');
+      return;
+    }
+
+    setUploadingFile(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API_URL}/api/upload/file`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      if (ws && connected) {
+        ws.send(JSON.stringify({
+          message: `[파일: ${response.data.filename}]`,
+          type: 'file',
+          file_url: response.data.url,
+          file_name: response.data.filename
+        }));
+      }
+    } catch (error) {
+      alert('파일 업로드 실패: ' + (error.response?.data?.detail || error.message));
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString('ko-KR', { 
@@ -463,7 +573,21 @@ function ChatRoom({ user, onLogout }) {
         </div>
       </header>
 
-      <div className="messages-container">
+      <div 
+        className={`messages-container ${isDragging ? 'dragging' : ''}`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {/* 드래그 오버레이 */}
+        {isDragging && (
+          <div className="drag-overlay">
+            <div className="drag-content">
+              <span>📁</span>
+              <p>파일을 여기에 놓으세요</p>
+            </div>
+          </div>
+        )}
         {/* 메시지가 없을 때 */}
         {messages.length === 0 && (
           <div className="empty-message">

@@ -123,6 +123,43 @@
   overflow-y: auto;
   padding: 20px;
   background: #e9ecef;
+  position: relative;
+}
+
+.messages-container.dragging {
+  background: #d4edda;
+}
+
+.drag-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(102, 126, 234, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  border: 4px dashed white;
+  margin: 10px;
+  border-radius: 12px;
+}
+
+.drag-content {
+  text-align: center;
+  color: white;
+}
+
+.drag-content span {
+  font-size: 60px;
+  display: block;
+  margin-bottom: 15px;
+}
+
+.drag-content p {
+  font-size: 20px;
+  font-weight: 600;
 }
 
 .empty-message {
