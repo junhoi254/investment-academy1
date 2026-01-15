@@ -13,19 +13,19 @@ const EMOJIS = [
   '🤗', '🤩', '🤔', '🤨', '😐', '😑', '😶', '🙄', '😏', '😣',
   '😥', '😮', '🤐', '😯', '😪', '😫', '😴', '😌', '😛', '😜',
   '😝', '🤤', '😒', '😓', '😔', '😕', '🙃', '🤑', '😲', '☹️',
-  '🙁', '😖', '😞', '😟', '😤', '😢', '😭', '😦', '😧', '😨',
   '👍', '👎', '👌', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉',
   '👆', '👇', '☝️', '✋', '🤚', '🖐', '🖖', '👋', '🤝', '🙏',
-  '💪', '🦾', '🦿', '🦵', '🦶', '👂', '🦻', '👃', '🧠', '❤️',
-  '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️',
-  '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮️', '✝️',
-  '🔥', '💯', '💢', '💥', '💫', '💦', '💨', '🕳️', '💬', '👁️',
-  '🗨️', '🗯️', '💭', '💤', '👋', '🎉', '🎊', '🎈', '🎁', '🏆'
+  '💪', '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💔',
+  '🔥', '💯', '💢', '💥', '💫', '💦', '💨', '🎉', '🎊', '🏆'
 ];
 
-function ChatRoom({ user, onLogin, onLogout }) {
+function ChatRoom({ user, onLogout }) {
   const { roomId } = useParams();
   const navigate = useNavigate();
+  
+  // roomId가 없으면 무료방(1번)으로
+  const currentRoomId = roomId || '1';
+  
   const [room, setRoom] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -34,6 +34,7 @@ function ChatRoom({ user, onLogin, onLogout }) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [viewerCount, setViewerCount] = useState(0);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
@@ -52,17 +53,35 @@ function ChatRoom({ user, onLogin, onLogout }) {
         ws.close();
       }
     };
-  }, [roomId, user]);
+  }, [currentRoomId, user]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
+  // 접속자 수 설정
+  useEffect(() => {
+    if (room) {
+      // 무료방: 2354명부터, 유료방: 465명부터
+      const baseCount = room.is_free ? 2354 : 465;
+      // 랜덤하게 0~5명 추가
+      const randomAdd = Math.floor(Math.random() * 6);
+      setViewerCount(baseCount + randomAdd);
+      
+      // 30초마다 1명씩 증가 (시뮬레이션)
+      const interval = setInterval(() => {
+        setViewerCount(prev => prev + 1);
+      }, 30000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [room]);
+
   const loadRoomInfo = async () => {
     try {
-      // 무료방/유료방 모두 조회
+      // 무료방 조회
       const freeRoomsRes = await axios.get(`${API_URL}/api/rooms/free`);
-      const currentRoom = freeRoomsRes.data.find(r => r.id === parseInt(roomId));
+      const currentRoom = freeRoomsRes.data.find(r => r.id === parseInt(currentRoomId));
       
       if (currentRoom) {
         setRoom(currentRoom);
@@ -75,8 +94,10 @@ function ChatRoom({ user, onLogin, onLogout }) {
         const paidRoomsRes = await axios.get(`${API_URL}/api/rooms/paid`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        const paidRoom = paidRoomsRes.data.find(r => r.id === parseInt(roomId));
-        setRoom(paidRoom);
+        const paidRoom = paidRoomsRes.data.find(r => r.id === parseInt(currentRoomId));
+        if (paidRoom) {
+          setRoom(paidRoom);
+        }
       }
     } catch (error) {
       console.error('채팅방 정보 로딩 실패:', error);
@@ -86,13 +107,12 @@ function ChatRoom({ user, onLogin, onLogout }) {
   const loadMessages = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/rooms/${roomId}/messages`, {
+      const response = await axios.get(`${API_URL}/api/rooms/${currentRoomId}/messages`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
       setMessages(response.data);
     } catch (error) {
       console.error('메시지 로딩 실패:', error);
-      // 로그인 필요한 경우
       if (error.response?.status === 401) {
         setMessages([]);
       }
@@ -103,7 +123,9 @@ function ChatRoom({ user, onLogin, onLogout }) {
     if (!user) return;
     
     const token = localStorage.getItem('token');
-    const websocket = new WebSocket(`${WS_URL}/ws/chat/${roomId}?token=${token}`);
+    if (!token) return;
+    
+    const websocket = new WebSocket(`${WS_URL}/ws/chat/${currentRoomId}?token=${token}`);
 
     websocket.onopen = () => {
       console.log('WebSocket 연결됨');
@@ -179,7 +201,7 @@ function ChatRoom({ user, onLogin, onLogout }) {
 
     // 일반 회원은 메시지 전송 불가
     if (user.role === 'member') {
-      alert('관리자와 직원만 메시지를 보낼 수 있습니다.');
+      alert('관리자와 서브관리자만 메시지를 보낼 수 있습니다.');
       return;
     }
 
@@ -201,12 +223,11 @@ function ChatRoom({ user, onLogin, onLogout }) {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (!user) {
-      alert('로그인이 필요합니다.');
+    if (!user || user.role === 'member') {
+      alert('관리자와 서브관리자만 업로드할 수 있습니다.');
       return;
     }
 
-    // 이미지 파일인지 확인
     if (!file.type.startsWith('image/')) {
       alert('이미지 파일만 업로드 가능합니다.');
       return;
@@ -226,7 +247,6 @@ function ChatRoom({ user, onLogin, onLogout }) {
         }
       });
 
-      // 이미지 메시지 전송
       if (ws && connected) {
         ws.send(JSON.stringify({
           message: `[이미지: ${response.data.filename}]`,
@@ -247,8 +267,8 @@ function ChatRoom({ user, onLogin, onLogout }) {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (!user) {
-      alert('로그인이 필요합니다.');
+    if (!user || user.role === 'member') {
+      alert('관리자와 서브관리자만 업로드할 수 있습니다.');
       return;
     }
 
@@ -266,7 +286,6 @@ function ChatRoom({ user, onLogin, onLogout }) {
         }
       });
 
-      // 파일 메시지 전송
       if (ws && connected) {
         ws.send(JSON.stringify({
           message: `[파일: ${response.data.filename}]`,
@@ -307,7 +326,6 @@ function ChatRoom({ user, onLogin, onLogout }) {
 
   const canSendMessage = () => {
     if (!room || !user) return false;
-    // 관리자와 직원(서브관리자)만 메시지 전송 가능
     if (user.role === 'member') return false;
     return true;
   };
@@ -357,22 +375,35 @@ function ChatRoom({ user, onLogin, onLogout }) {
   return (
     <div className="chatroom-container">
       <header className="chatroom-header">
-        <button className="back-button" onClick={() => navigate('/chat')}>
-          ← 뒤로
-        </button>
+        {/* 유료방이면 뒤로 버튼 표시 */}
+        {room && !room.is_free ? (
+          <button className="back-button" onClick={() => navigate('/rooms')}>
+            ← 뒤로
+          </button>
+        ) : (
+          <div className="header-spacer"></div>
+        )}
+        
         <div className="room-title">
-          <h2>{room?.name || '채팅방'}</h2>
-          {room?.is_free && <span className="free-badge">무료</span>}
-          {user && (
-            <span className={`connection-status ${connected ? 'connected' : 'disconnected'}`}>
-              {connected ? '● 연결됨' : '○ 연결 안됨'}
-            </span>
-          )}
+          <h2>{room?.name || '무료 공지방'}</h2>
+          <div className="room-badges">
+            {room?.is_free && <span className="free-badge">무료</span>}
+            <span className="viewer-count">👥 {viewerCount.toLocaleString()}명 시청 중</span>
+          </div>
         </div>
+        
         <div className="header-actions">
           {user ? (
             <>
               <span className="user-name">{user.name}</span>
+              {user.role === 'admin' && (
+                <button className="admin-btn" onClick={() => navigate('/admin')}>
+                  관리자
+                </button>
+              )}
+              <button className="rooms-btn" onClick={() => navigate('/rooms')}>
+                채팅방 목록
+              </button>
               <button className="logout-button" onClick={onLogout}>로그아웃</button>
             </>
           ) : (
@@ -384,10 +415,10 @@ function ChatRoom({ user, onLogin, onLogout }) {
       </header>
 
       <div className="messages-container">
-        {/* 메시지가 없을 때 안내 메시지 (버튼 제거됨) */}
-        {messages.length === 0 && room?.is_free && (
-          <div className="login-prompt-message">
-            <p>📢 무료 채팅방입니다</p>
+        {/* 메시지가 없을 때 */}
+        {messages.length === 0 && (
+          <div className="empty-message">
+            <p>📢 {room?.is_free ? '무료' : '유료'} 채팅방입니다</p>
             <p>일타훈장님과 서브관리자의 리딩을 확인하세요!</p>
           </div>
         )}
@@ -415,75 +446,73 @@ function ChatRoom({ user, onLogin, onLogout }) {
 
       {/* 메시지 입력란 */}
       <form className="message-input-container" onSubmit={sendMessage}>
-        {/* 로그인하지 않은 사용자 */}
-        {!user && (
+        {/* 관리자/서브관리자가 아닌 경우 */}
+        {(!user || user.role === 'member') && (
           <div className="no-user-input">
             <span>💬 메시지를 보내려면 로그인이 필요합니다</span>
-            <button 
-              type="button"
-              className="input-login-button"
-              onClick={() => navigate('/login')}
-            >
-              로그인
-            </button>
+            {!user && (
+              <button 
+                type="button"
+                className="input-login-button"
+                onClick={() => navigate('/login')}
+              >
+                로그인
+              </button>
+            )}
           </div>
         )}
         
-        {/* 로그인한 사용자 */}
-        {user && (
+        {/* 관리자/서브관리자인 경우 */}
+        {user && (user.role === 'admin' || user.role === 'staff') && (
           <>
-            {/* 파일 업로드 버튼 */}
-            {canSendMessage() && (
-              <div className="upload-buttons">
-                <input
-                  type="file"
-                  ref={imageInputRef}
-                  accept="image/*"
-                  style={{ display: 'none' }}
-                  onChange={handleImageUpload}
-                />
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.zip"
-                  style={{ display: 'none' }}
-                  onChange={handleFileUpload}
-                />
-                
-                <button
-                  type="button"
-                  className="upload-btn"
-                  onClick={() => imageInputRef.current?.click()}
-                  disabled={uploadingImage || !connected}
-                  title="이미지 업로드"
-                >
-                  {uploadingImage ? '⏳' : '🖼️'}
-                </button>
-                
-                <button
-                  type="button"
-                  className="upload-btn"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingFile || !connected}
-                  title="파일 업로드"
-                >
-                  {uploadingFile ? '⏳' : '📎'}
-                </button>
-                
-                <button
-                  type="button"
-                  className="emoji-btn"
-                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  disabled={!connected}
-                  title="이모티콘"
-                >
-                  😊
-                </button>
-              </div>
-            )}
+            <div className="upload-buttons">
+              <input
+                type="file"
+                ref={imageInputRef}
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleImageUpload}
+              />
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.zip"
+                style={{ display: 'none' }}
+                onChange={handleFileUpload}
+              />
+              
+              <button
+                type="button"
+                className="upload-btn"
+                onClick={() => imageInputRef.current?.click()}
+                disabled={uploadingImage || !connected}
+                title="이미지 업로드"
+              >
+                {uploadingImage ? '⏳' : '🖼️'}
+              </button>
+              
+              <button
+                type="button"
+                className="upload-btn"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingFile || !connected}
+                title="파일 업로드"
+              >
+                {uploadingFile ? '⏳' : '📎'}
+              </button>
+              
+              <button
+                type="button"
+                className="emoji-btn"
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                disabled={!connected}
+                title="이모티콘"
+              >
+                😊
+              </button>
+            </div>
 
-            {/* 이모티콘 선택기 */}
-            {showEmojiPicker && canSendMessage() && (
+            {showEmojiPicker && (
               <div className="emoji-picker">
                 {EMOJIS.map((emoji, index) => (
                   <button
@@ -502,18 +531,14 @@ function ChatRoom({ user, onLogin, onLogout }) {
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              placeholder={
-                canSendMessage() 
-                  ? "메시지를 입력하세요..." 
-                  : "관리자와 서브관리자만 메시지를 보낼 수 있습니다"
-              }
-              disabled={!canSendMessage() || !connected}
+              placeholder="메시지를 입력하세요..."
+              disabled={!connected}
               className="message-input"
             />
             <button 
               type="submit" 
               className="send-button"
-              disabled={!newMessage.trim() || !canSendMessage() || !connected}
+              disabled={!newMessage.trim() || !connected}
             >
               전송
             </button>
