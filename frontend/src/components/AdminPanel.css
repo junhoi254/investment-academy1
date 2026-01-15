@@ -237,6 +237,32 @@
   background: #c82333;
 }
 
+.btn-edit {
+  background: #17a2b8;
+  color: white;
+}
+
+.btn-edit:hover {
+  background: #138496;
+}
+
+.form-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.form-buttons button {
+  flex: 1;
+}
+
+.cancel-btn {
+  background: #6c757d !important;
+}
+
+.cancel-btn:hover {
+  background: #5a6268 !important;
+}
+
 .staff-form, .room-form {
   display: flex;
   flex-direction: column;

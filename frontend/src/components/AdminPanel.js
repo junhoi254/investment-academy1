@@ -27,6 +27,9 @@ function AdminPanel({ user, onLogout }) {
     description: ''
   });
 
+  // 채팅방 수정 모드
+  const [editingRoom, setEditingRoom] = useState(null);
+
   useEffect(() => {
     loadUsers();
     if (activeTab === 'rooms') {
@@ -159,6 +162,52 @@ function AdminPanel({ user, onLogout }) {
     } catch (error) {
       alert('채팅방 생성 실패: ' + error.response?.data?.detail);
     }
+  };
+
+  const updateRoom = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API_URL}/api/rooms/${editingRoom.id}`, roomForm, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      alert('채팅방이 수정되었습니다');
+      setRoomForm({ name: '', room_type: 'notice', is_free: false, description: '' });
+      setEditingRoom(null);
+      loadRooms();
+    } catch (error) {
+      alert('채팅방 수정 실패: ' + error.response?.data?.detail);
+    }
+  };
+
+  const deleteRoom = async (roomId, roomName) => {
+    if (!window.confirm(`"${roomName}" 채팅방을 삭제하시겠습니까?\n(모든 메시지도 함께 삭제됩니다)`)) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_URL}/api/rooms/${roomId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      alert('채팅방이 삭제되었습니다');
+      loadRooms();
+    } catch (error) {
+      alert('채팅방 삭제 실패: ' + error.response?.data?.detail);
+    }
+  };
+
+  const startEditRoom = (room) => {
+    setEditingRoom(room);
+    setRoomForm({
+      name: room.name,
+      room_type: room.room_type,
+      is_free: room.is_free,
+      description: room.description || ''
+    });
+  };
+
+  const cancelEditRoom = () => {
+    setEditingRoom(null);
+    setRoomForm({ name: '', room_type: 'notice', is_free: false, description: '' });
   };
 
   const getRoleName = (role) => {
@@ -409,8 +458,8 @@ function AdminPanel({ user, onLogout }) {
         {/* 채팅방 관리 */}
         {activeTab === 'rooms' && (
           <div className="rooms-section">
-            <h2>💬 채팅방 생성</h2>
-            <form className="room-form" onSubmit={createRoom}>
+            <h2>💬 {editingRoom ? '채팅방 수정' : '채팅방 생성'}</h2>
+            <form className="room-form" onSubmit={editingRoom ? updateRoom : createRoom}>
               <input
                 type="text"
                 placeholder="채팅방 이름"
@@ -440,7 +489,14 @@ function AdminPanel({ user, onLogout }) {
                 value={roomForm.description}
                 onChange={(e) => setRoomForm({...roomForm, description: e.target.value})}
               />
-              <button type="submit">채팅방 생성</button>
+              <div className="form-buttons">
+                <button type="submit">{editingRoom ? '수정 완료' : '채팅방 생성'}</button>
+                {editingRoom && (
+                  <button type="button" className="cancel-btn" onClick={cancelEditRoom}>
+                    취소
+                  </button>
+                )}
+              </div>
             </form>
 
             <h2>채팅방 목록</h2>
@@ -455,6 +511,7 @@ function AdminPanel({ user, onLogout }) {
                     <th>무료/유료</th>
                     <th>설명</th>
                     <th>생성일</th>
+                    <th>관리</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -471,6 +528,20 @@ function AdminPanel({ user, onLogout }) {
                       </td>
                       <td>{room.description}</td>
                       <td>{formatDate(room.created_at)}</td>
+                      <td className="actions">
+                        <button 
+                          className="btn-edit"
+                          onClick={() => startEditRoom(room)}
+                        >
+                          수정
+                        </button>
+                        <button 
+                          className="btn-delete"
+                          onClick={() => deleteRoom(room.id, room.name)}
+                        >
+                          삭제
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

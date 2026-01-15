@@ -317,7 +317,7 @@ function ChatRoom({ user, onLogout }) {
   const getUserRoleBadge = (role) => {
     const badges = {
       admin: { text: '일타훈장님', class: 'admin' },
-      staff: { text: '서브관리자', class: 'staff' },
+      staff: { text: '일타훈장님', class: 'admin' },
       member: { text: '회원', class: 'member' },
       system: { text: 'SYSTEM', class: 'system' }
     };

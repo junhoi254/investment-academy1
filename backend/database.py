@@ -4,15 +4,12 @@ from sqlalchemy.orm import sessionmaker
 import os
 
 # 데이터베이스 URL
-# 개발 환경: SQLite
-# 프로덕션 환경: PostgreSQL (AWS RDS)
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "sqlite:///./trading_chat.db"  # 기본값: SQLite
-)
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./trading_chat.db")
 
-# PostgreSQL 예시 (AWS RDS 사용 시)
-# DATABASE_URL = "postgresql://username:password@your-rds-endpoint:5432/dbname"
+# Render의 PostgreSQL URL은 postgres://로 시작하는데, 
+# SQLAlchemy는 postgresql://을 요구함
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 # SQLAlchemy 엔진 생성
 if DATABASE_URL.startswith("sqlite"):

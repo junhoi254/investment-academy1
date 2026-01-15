@@ -372,6 +372,48 @@ async def create_room(
     db.refresh(new_room)
     return new_room
 
+@app.put("/api/rooms/{room_id}")
+async def update_room(
+    room_id: int,
+    room_data: schemas.RoomCreate,
+    admin: models.User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """채팅방 수정"""
+    room = db.query(models.Room).filter(models.Room.id == room_id).first()
+    if not room:
+        raise HTTPException(status_code=404, detail="채팅방을 찾을 수 없습니다")
+    
+    room.name = room_data.name
+    room.room_type = room_data.room_type
+    room.is_free = room_data.is_free
+    room.description = room_data.description
+    
+    db.commit()
+    db.refresh(room)
+    
+    return {"message": "채팅방이 수정되었습니다", "room": room}
+
+@app.delete("/api/rooms/{room_id}")
+async def delete_room(
+    room_id: int,
+    admin: models.User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """채팅방 삭제 (메시지도 함께 삭제)"""
+    room = db.query(models.Room).filter(models.Room.id == room_id).first()
+    if not room:
+        raise HTTPException(status_code=404, detail="채팅방을 찾을 수 없습니다")
+    
+    # 채팅방의 모든 메시지 삭제
+    db.query(models.Message).filter(models.Message.room_id == room_id).delete()
+    
+    # 채팅방 삭제
+    db.delete(room)
+    db.commit()
+    
+    return {"message": "채팅방이 삭제되었습니다"}
+
 @app.get("/api/rooms/{room_id}/messages")
 async def get_room_messages(
     room_id: int,
