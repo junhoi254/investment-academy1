@@ -13,7 +13,7 @@ import os
 import uuid
 from pathlib import Path
 
-from database import get_db, engine
+from database import get_db, engine, SessionLocal
 import models
 import schemas
 
@@ -482,7 +482,6 @@ async def upload_file(
 async def websocket_chat(websocket: WebSocket, room_id: int, token: str):
     """채팅 WebSocket"""
     # WebSocket에서는 Depends가 제대로 작동하지 않으므로 수동으로 세션 생성
-    from database import SessionLocal
     db = SessionLocal()
     
     user_id = None
