@@ -36,6 +36,9 @@ function AdminPanel({ user, onLogout }) {
     is_pinned: false
   });
   const [editingThread, setEditingThread] = useState(null);
+  
+  // 채팅방 수정
+  const [editingRoom, setEditingRoom] = useState(null);
 
   useEffect(() => {
     if (activeTab === 'users') {
@@ -277,6 +280,21 @@ function AdminPanel({ user, onLogout }) {
       loadRooms();
     } catch (error) {
       alert('채팅방 생성 실패: ' + error.response?.data?.detail);
+    }
+  };
+
+  // 채팅방 수정
+  const updateRoom = async (roomId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API_URL}/api/admin/rooms/${roomId}`, editingRoom, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      alert('채팅방이 수정되었습니다');
+      setEditingRoom(null);
+      loadRooms();
+    } catch (error) {
+      alert('채팅방 수정 실패: ' + error.response?.data?.detail);
     }
   };
 
@@ -595,24 +613,101 @@ function AdminPanel({ user, onLogout }) {
                 <tbody>
                   {rooms.map(room => (
                     <tr key={room.id}>
-                      <td>{room.name}</td>
-                      <td>{getRoomTypeName(room.room_type)}</td>
                       <td>
-                        {room.is_free ? (
+                        {editingRoom?.id === room.id ? (
+                          <input
+                            type="text"
+                            className="edit-input"
+                            value={editingRoom.name}
+                            onChange={(e) => setEditingRoom({...editingRoom, name: e.target.value})}
+                          />
+                        ) : (
+                          room.name
+                        )}
+                      </td>
+                      <td>
+                        {editingRoom?.id === room.id ? (
+                          <select
+                            className="edit-input"
+                            value={editingRoom.room_type}
+                            onChange={(e) => setEditingRoom({...editingRoom, room_type: e.target.value})}
+                          >
+                            <option value="notice">공지방</option>
+                            <option value="stock">주식</option>
+                            <option value="futures">해외선물</option>
+                            <option value="crypto">코인선물</option>
+                          </select>
+                        ) : (
+                          getRoomTypeName(room.room_type)
+                        )}
+                      </td>
+                      <td>
+                        {editingRoom?.id === room.id ? (
+                          <label style={{display: 'flex', alignItems: 'center', gap: '5px', color: '#fff'}}>
+                            <input
+                              type="checkbox"
+                              checked={editingRoom.is_free}
+                              onChange={(e) => setEditingRoom({...editingRoom, is_free: e.target.checked})}
+                            />
+                            무료
+                          </label>
+                        ) : room.is_free ? (
                           <span className="badge free">무료</span>
                         ) : (
                           <span className="badge paid">유료</span>
                         )}
                       </td>
-                      <td>{room.description}</td>
-                      <td>{formatDate(room.created_at)}</td>
                       <td>
-                        <button 
-                          className="delete-btn"
-                          onClick={() => deleteRoom(room.id, room.name)}
-                        >
-                          🗑️ 삭제
-                        </button>
+                        {editingRoom?.id === room.id ? (
+                          <input
+                            type="text"
+                            className="edit-input"
+                            value={editingRoom.description}
+                            onChange={(e) => setEditingRoom({...editingRoom, description: e.target.value})}
+                          />
+                        ) : (
+                          room.description
+                        )}
+                      </td>
+                      <td>{formatDate(room.created_at)}</td>
+                      <td className="action-cell">
+                        {editingRoom?.id === room.id ? (
+                          <>
+                            <button 
+                              className="save-btn"
+                              onClick={() => updateRoom(room.id)}
+                            >
+                              ✓ 저장
+                            </button>
+                            <button 
+                              className="cancel-btn"
+                              onClick={() => setEditingRoom(null)}
+                            >
+                              ✕ 취소
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button 
+                              className="edit-btn"
+                              onClick={() => setEditingRoom({
+                                id: room.id,
+                                name: room.name,
+                                room_type: room.room_type,
+                                is_free: room.is_free,
+                                description: room.description || ''
+                              })}
+                            >
+                              ✏️ 수정
+                            </button>
+                            <button 
+                              className="delete-btn"
+                              onClick={() => deleteRoom(room.id, room.name)}
+                            >
+                              🗑️ 삭제
+                            </button>
+                          </>
+                        )}
                       </td>
                     </tr>
                   ))}

@@ -304,6 +304,28 @@ async def create_room(room_data: schemas.RoomCreate, admin: models.User = Depend
     db.refresh(new_room)
     return new_room
 
+@app.put("/api/admin/rooms/{room_id}")
+async def update_room(
+    room_id: int,
+    room_data: schemas.RoomCreate,
+    admin: models.User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """채팅방 수정 (관리자 전용)"""
+    room = db.query(models.Room).filter(models.Room.id == room_id).first()
+    if not room:
+        raise HTTPException(status_code=404, detail="채팅방을 찾을 수 없습니다")
+    
+    room.name = room_data.name
+    room.room_type = room_data.room_type
+    room.is_free = room_data.is_free
+    room.description = room_data.description
+    
+    db.commit()
+    db.refresh(room)
+    
+    return room
+
 @app.delete("/api/admin/rooms/{room_id}")
 async def delete_room(
     room_id: int,
