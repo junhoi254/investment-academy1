@@ -1,23 +1,25 @@
+/* 전체 다크 테마 */
 .chat-list-container {
   min-height: 100vh;
-  background: #f5f7fa;
+  background: #000000;
 }
 
-.chat-header {
-  background: white;
-  padding: 20px 40px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+.chat-list-header {
+  background: #000000;
+  padding: 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-bottom: 1px solid #1a1a1a;
 }
 
-.chat-header h1 {
-  color: #333;
-  font-size: 24px;
+.logo-section h1 {
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 700;
 }
 
-.header-actions {
+.user-section {
   display: flex;
   align-items: center;
   gap: 15px;
@@ -30,88 +32,106 @@
 }
 
 .user-name {
+  color: #ffffff;
   font-weight: 600;
-  color: #333;
+  font-size: 14px;
 }
 
 .user-role {
-  background: #667eea;
-  color: white;
+  background: #1a1a1a;
+  color: #0095f6;
   padding: 4px 12px;
   border-radius: 12px;
   font-size: 12px;
+  font-weight: 600;
 }
 
 .days-remaining {
-  background: #28a745;
-  color: white;
-  padding: 4px 12px;
-  border-radius: 12px;
+  color: #00ba7c;
   font-size: 12px;
+  font-weight: 500;
 }
 
 .admin-button, .logout-button, .login-button {
-  background: #000000;
+  background: #1a1a1a;
   color: #ffffff;
   padding: 10px 18px;
   font-size: 14px;
   font-weight: 600;
-  border: none;
+  border: 1px solid #333;
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .admin-button:hover, .logout-button:hover, .login-button:hover {
-  background: #222222;
+  background: #333;
 }
 
+/* 컨텐츠 영역 */
 .rooms-container {
-  max-width: 1200px;
+  max-width: 800px;
   margin: 0 auto;
-  padding: 40px 20px;
+  padding: 30px 20px;
 }
 
 .room-section {
-  margin-bottom: 50px;
+  margin-bottom: 40px;
 }
 
 .room-section h2 {
-  color: #333;
-  margin-bottom: 10px;
-  font-size: 24px;
+  color: #ffffff;
+  margin-bottom: 8px;
+  font-size: 18px;
+  font-weight: 700;
 }
 
 .section-description {
   color: #666;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  font-size: 13px;
 }
 
+/* 카드 리스트 */
 .room-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .room-card {
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: #0a0a0a;
+  padding: 18px 20px;
+  border-radius: 16px;
+  border: 1px solid #1a1a1a;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s;
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 16px;
 }
 
 .room-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  background: #111111;
+  border-color: #333;
+}
+
+.room-card.free-room {
+  border-left: 3px solid #00ba7c;
+}
+
+.room-card.paid-room {
+  border-left: 3px solid #0095f6;
+}
+
+.room-card.notice-board {
+  border-left: 3px solid #fbbf24;
 }
 
 .room-icon {
-  font-size: 40px;
+  font-size: 32px;
+  width: 50px;
+  text-align: center;
 }
 
 .room-info {
@@ -119,50 +139,61 @@
 }
 
 .room-info h3 {
-  color: #333;
-  margin-bottom: 5px;
-  font-size: 18px;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
 }
 
 .room-info p {
   color: #666;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .room-badge {
-  background: #28a745;
-  color: white;
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
 }
 
-.room-badge.premium {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+.room-badge:not(.premium):not(.notice) {
+  background: #00ba7c;
+  color: #ffffff;
 }
 
+.room-badge.premium {
+  background: #0095f6;
+  color: #ffffff;
+}
+
+.room-badge.notice {
+  background: #fbbf24;
+  color: #000000;
+}
+
+/* 로그인 유도 */
 .login-prompt {
+  background: #0a0a0a;
+  border: 1px solid #1a1a1a;
+  border-radius: 16px;
+  padding: 40px;
   text-align: center;
-  background: white;
-  padding: 60px 40px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .login-prompt h2 {
-  color: #333;
-  margin-bottom: 15px;
+  color: #ffffff;
+  margin-bottom: 10px;
 }
 
 .login-prompt p {
   color: #666;
-  margin-bottom: 30px;
+  margin-bottom: 24px;
 }
 
 .prompt-login-button {
-  background: #000000;
-  color: #ffffff;
+  background: #ffffff;
+  color: #000000;
   padding: 14px 36px;
   font-size: 15px;
   font-weight: 600;
@@ -173,16 +204,17 @@
 }
 
 .prompt-login-button:hover {
-  background: #222222;
+  background: #e0e0e0;
 }
 
+/* 모달 */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.8);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -190,172 +222,116 @@
 }
 
 .modal-content {
-  background: white;
-  padding: 40px;
-  border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  text-align: center;
+  background: #1a1a1a;
+  padding: 30px;
+  border-radius: 16px;
   max-width: 400px;
+  width: 90%;
+  border: 1px solid #333;
 }
 
-.modal-content h3 {
-  color: #333;
-  margin-bottom: 15px;
+.modal-content h2 {
+  color: #ffffff;
+  margin-bottom: 20px;
+  text-align: center;
 }
 
-.modal-content p {
+.modal-content input {
+  width: 100%;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  border: 1px solid #333;
+  border-radius: 10px;
+  background: #0a0a0a;
+  color: #ffffff;
+  font-size: 14px;
+}
+
+.modal-content input::placeholder {
   color: #666;
-  margin-bottom: 30px;
+}
+
+.modal-content input:focus {
+  outline: none;
+  border-color: #0095f6;
 }
 
 .modal-buttons {
   display: flex;
   gap: 10px;
-  justify-content: center;
+  margin-top: 20px;
 }
 
 .modal-buttons button {
-  padding: 12px 30px;
-  background: #667eea;
-  color: white;
+  flex: 1;
+  padding: 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modal-buttons button:first-child {
+  background: #ffffff;
+  color: #000000;
+  border: none;
 }
 
 .modal-buttons button:last-child {
-  background: #ccc;
-  color: #333;
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid #333;
 }
 
-/* 쓰레드(게시판) 스타일 */
-.thread-section {
-  margin-bottom: 30px;
+.modal-buttons button:first-child:hover {
+  background: #e0e0e0;
 }
 
-.thread-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.modal-buttons button:last-child:hover {
+  background: #333;
 }
 
-.thread-card {
-  background: white;
-  padding: 16px 20px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.thread-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
-}
-
-.thread-card.pinned {
-  background: linear-gradient(135deg, #fff9e6 0%, #fff5d6 100%);
-  border-left: 4px solid #ffc107;
-}
-
-.thread-icon {
-  font-size: 28px;
-  width: 40px;
+/* 로딩 */
+.loading {
   text-align: center;
+  padding: 100px 20px;
+  color: #666;
+  font-size: 16px;
 }
 
-.thread-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.thread-info h3 {
-  color: #333;
-  font-size: 15px;
-  margin-bottom: 5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.pin-label {
-  color: #ffc107;
-  margin-right: 5px;
-}
-
-.thread-meta {
-  display: flex;
-  gap: 12px;
-  font-size: 12px;
-  color: #888;
-}
-
-.thread-author {
-  color: #667eea;
-  font-weight: 500;
-}
-
-.thread-stats {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-  font-size: 12px;
-  color: #888;
-}
-
-.comment-count {
-  color: #667eea;
-}
-
-.view-count {
-  color: #888;
-}
-
-/* 모바일 쓰레드 스타일 */
+/* 모바일 */
 @media (max-width: 768px) {
-  .thread-card {
-    padding: 12px 15px;
+  .chat-list-header {
+    flex-direction: column;
+    gap: 15px;
+    padding: 15px;
   }
   
-  .thread-icon {
-    font-size: 24px;
-    width: 30px;
+  .user-section {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
   }
   
-  .thread-info h3 {
-    font-size: 14px;
+  .rooms-container {
+    padding: 20px 15px;
   }
   
-  .thread-stats {
-    flex-direction: row;
-    gap: 10px;
+  .room-section h2 {
+    font-size: 16px;
   }
-}
-
-/* 공지 게시판 카드 */
-.room-card.notice-board {
-  background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
-  border-left: 4px solid #667eea;
-}
-
-.room-badge.notice {
-  background: #667eea;
-  color: white;
-}
-
-/* 공지 게시판 카드 스타일 */
-.room-card.notice-board {
-  background: linear-gradient(135deg, #fff9e6 0%, #fff5d6 100%);
-  border-left: 4px solid #ffc107;
-}
-
-.room-card.notice-board:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(255, 193, 7, 0.3);
-}
-
-.room-badge.notice {
-  background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
-  color: white;
+  
+  .room-card {
+    padding: 15px;
+  }
+  
+  .room-icon {
+    font-size: 28px;
+    width: 40px;
+  }
+  
+  .room-info h3 {
+    font-size: 15px;
+  }
 }

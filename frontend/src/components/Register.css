@@ -1,121 +1,120 @@
+/* 회원가입 페이지 다크 테마 */
 .register-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
   min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000000;
   padding: 20px;
 }
 
 .register-box {
-  background: white;
+  background: #0a0a0a;
   padding: 40px;
   border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   width: 100%;
-  max-width: 450px;
+  max-width: 400px;
+  border: 1px solid #1a1a1a;
 }
 
-.register-logo {
+.register-box h2 {
   text-align: center;
-  margin-bottom: 20px;
-}
-
-.register-logo img {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid #667eea;
-  box-shadow: 0 6px 15px rgba(102, 126, 234, 0.3);
-}
-
-.register-box h1 {
-  text-align: center;
-  color: #333;
-  margin-bottom: 10px;
-  font-size: 28px;
-}
-
-.register-subtitle {
-  text-align: center;
-  color: #667eea;
+  color: #ffffff;
   margin-bottom: 30px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 24px;
+  font-weight: 700;
 }
 
-.form-group {
-  margin-bottom: 20px;
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  color: #555;
-  font-weight: 600;
+.register-form input {
+  padding: 16px;
+  border: 1px solid #333;
+  border-radius: 12px;
+  font-size: 15px;
+  background: #1a1a1a;
+  color: #ffffff;
+  transition: border-color 0.2s;
 }
 
-.form-group input {
-  width: 100%;
-}
-
-.form-group small {
-  display: block;
-  margin-top: 5px;
-  color: #888;
-  font-size: 12px;
-}
-
-.error-message {
-  background: #fee;
-  color: #c33;
-  padding: 12px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  text-align: center;
-  border: 1px solid #fcc;
-}
-
-.register-button {
-  width: 100%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 14px;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.register-button:hover:not(:disabled) {
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-}
-
-.login-link {
-  text-align: center;
-  margin-top: 20px;
+.register-form input::placeholder {
   color: #666;
 }
 
-.login-link a {
-  color: #667eea;
-  text-decoration: none;
-  font-weight: 600;
+.register-form input:focus {
+  outline: none;
+  border-color: #0095f6;
 }
 
-.login-link a:hover {
+.register-form button {
+  background: #ffffff;
+  color: #000000;
+  padding: 16px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 10px;
+}
+
+.register-form button:hover {
+  background: #e0e0e0;
+}
+
+.register-form button:disabled {
+  background: #333;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.register-links {
+  text-align: center;
+  margin-top: 24px;
+}
+
+.register-links a {
+  color: #0095f6;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.register-links a:hover {
   text-decoration: underline;
 }
 
-.success-box {
+.error-message {
+  background: #1a0a0a;
+  color: #ff4444;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
   text-align: center;
+  border: 1px solid #330000;
 }
 
-.success-box h1 {
-  color: #28a745;
-  margin-bottom: 20px;
+.success-message {
+  background: #0a1a0a;
+  color: #00ba7c;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  text-align: center;
+  border: 1px solid #003300;
 }
 
-.success-box p {
-  color: #666;
-  margin-bottom: 10px;
-  line-height: 1.6;
+/* 모바일 */
+@media (max-width: 768px) {
+  .register-box {
+    padding: 30px 24px;
+  }
+  
+  .register-box h2 {
+    font-size: 22px;
+  }
 }
