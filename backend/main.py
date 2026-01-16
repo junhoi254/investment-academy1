@@ -579,6 +579,112 @@ async def get_news(category: str, current_user: models.User = Depends(get_curren
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# ==================== 댓글(쓰레드) API ====================
+
+@app.get("/api/messages/{message_id}/replies", response_model=List[schemas.ReplyResponse])
+async def get_replies(message_id: int, db: Session = Depends(get_db)):
+    """메시지의 댓글 목록 조회"""
+    from sqlalchemy.orm import joinedload
+    
+    replies = db.query(models.Reply).options(
+        joinedload(models.Reply.user)
+    ).filter(
+        models.Reply.message_id == message_id
+    ).order_by(models.Reply.created_at.asc()).all()
+    
+    return replies
+
+@app.post("/api/messages/{message_id}/replies", response_model=schemas.ReplyResponse)
+async def create_reply(
+    message_id: int, 
+    reply_data: schemas.ReplyCreate,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """댓글 작성 (승인된 회원만)"""
+    # 댓글 기능 활성화 여부 확인
+    setting = db.query(models.Settings).filter(models.Settings.key == "replies_enabled").first()
+    if not setting or setting.value != "true":
+        raise HTTPException(status_code=403, detail="댓글 기능이 비활성화되어 있습니다")
+    
+    # 승인된 사용자인지 확인
+    if not current_user.is_approved:
+        raise HTTPException(status_code=403, detail="승인된 회원만 댓글을 작성할 수 있습니다")
+    
+    # 메시지 존재 여부 확인
+    message = db.query(models.Message).filter(models.Message.id == message_id).first()
+    if not message:
+        raise HTTPException(status_code=404, detail="메시지를 찾을 수 없습니다")
+    
+    # 댓글 생성
+    new_reply = models.Reply(
+        message_id=message_id,
+        user_id=current_user.id,
+        content=reply_data.content
+    )
+    db.add(new_reply)
+    db.commit()
+    db.refresh(new_reply)
+    
+    # user 정보 로드
+    new_reply.user = current_user
+    
+    return new_reply
+
+@app.delete("/api/replies/{reply_id}")
+async def delete_reply(
+    reply_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """댓글 삭제 (본인 또는 관리자)"""
+    reply = db.query(models.Reply).filter(models.Reply.id == reply_id).first()
+    if not reply:
+        raise HTTPException(status_code=404, detail="댓글을 찾을 수 없습니다")
+    
+    # 본인 또는 관리자만 삭제 가능
+    if reply.user_id != current_user.id and current_user.role not in ["admin", "staff"]:
+        raise HTTPException(status_code=403, detail="삭제 권한이 없습니다")
+    
+    db.delete(reply)
+    db.commit()
+    
+    return {"message": "댓글이 삭제되었습니다"}
+
+# ==================== 설정 API ====================
+
+@app.get("/api/settings/{key}")
+async def get_setting(key: str, db: Session = Depends(get_db)):
+    """설정 값 조회"""
+    setting = db.query(models.Settings).filter(models.Settings.key == key).first()
+    if not setting:
+        return {"key": key, "value": None}
+    return {"key": setting.key, "value": setting.value}
+
+@app.put("/api/admin/settings/{key}")
+async def update_setting(
+    key: str,
+    value: str,
+    admin: models.User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """설정 값 변경 (관리자 전용)"""
+    setting = db.query(models.Settings).filter(models.Settings.key == key).first()
+    if setting:
+        setting.value = value
+    else:
+        setting = models.Settings(key=key, value=value)
+        db.add(setting)
+    
+    db.commit()
+    return {"key": key, "value": value}
+
+@app.get("/api/admin/settings")
+async def get_all_settings(admin: models.User = Depends(get_admin_user), db: Session = Depends(get_db)):
+    """모든 설정 조회 (관리자 전용)"""
+    settings = db.query(models.Settings).all()
+    return {s.key: s.value for s in settings}
+
 # ==================== 서버 시작 ====================
 
 @app.on_event("startup")

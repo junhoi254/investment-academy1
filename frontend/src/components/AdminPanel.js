@@ -12,6 +12,9 @@ function AdminPanel({ user, onLogout }) {
   const [rooms, setRooms] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [settings, setSettings] = useState({
+    replies_enabled: false
+  });
   
   // 직원 생성 폼
   const [staffForm, setStaffForm] = useState({
@@ -38,8 +41,37 @@ function AdminPanel({ user, onLogout }) {
       // 5초마다 자동 새로고침
       const interval = setInterval(loadOnlineUsers, 5000);
       return () => clearInterval(interval);
+    } else if (activeTab === 'settings') {
+      loadSettings();
     }
   }, [activeTab]);
+
+  const loadSettings = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/api/admin/settings`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSettings({
+        replies_enabled: response.data.replies_enabled === 'true'
+      });
+    } catch (error) {
+      console.error('설정 로딩 실패:', error);
+    }
+  };
+
+  const updateSetting = async (key, value) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API_URL}/api/admin/settings/${key}?value=${value}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSettings(prev => ({ ...prev, [key]: value === 'true' }));
+    } catch (error) {
+      console.error('설정 변경 실패:', error);
+      alert('설정 변경에 실패했습니다.');
+    }
+  };
 
   const loadOnlineUsers = async () => {
     try {
@@ -238,6 +270,12 @@ function AdminPanel({ user, onLogout }) {
           onClick={() => setActiveTab('rooms')}
         >
           채팅방 관리
+        </button>
+        <button 
+          className={activeTab === 'settings' ? 'active' : ''}
+          onClick={() => setActiveTab('settings')}
+        >
+          ⚙️ 설정
         </button>
       </div>
 
@@ -489,6 +527,30 @@ function AdminPanel({ user, onLogout }) {
                 </tbody>
               </table>
             )}
+          </div>
+        )}
+
+        {/* 설정 */}
+        {activeTab === 'settings' && (
+          <div className="settings-section">
+            <h2>⚙️ 시스템 설정</h2>
+            
+            <div className="settings-list">
+              <div className="setting-item">
+                <div className="setting-info">
+                  <h3>💬 댓글(쓰레드) 기능</h3>
+                  <p>회원들이 관리자 게시글에 댓글을 달 수 있습니다.</p>
+                </div>
+                <label className="toggle-switch">
+                  <input 
+                    type="checkbox" 
+                    checked={settings.replies_enabled}
+                    onChange={(e) => updateSetting('replies_enabled', e.target.checked ? 'true' : 'false')}
+                  />
+                  <span className="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
           </div>
         )}
       </div>

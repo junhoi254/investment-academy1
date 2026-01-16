@@ -41,6 +41,10 @@ function ChatRoom({ user, onLogin, onLogout }) {
   });
   const [searchMode, setSearchMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [repliesEnabled, setRepliesEnabled] = useState(false);
+  const [expandedReplies, setExpandedReplies] = useState({});  // message_id: replies[]
+  const [replyingTo, setReplyingTo] = useState(null);  // message_id
+  const [replyContent, setReplyContent] = useState('');
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -67,6 +71,7 @@ function ChatRoom({ user, onLogin, onLogout }) {
     
     loadRoomInfo();
     loadMessages();
+    loadRepliesSetting();
 
     return () => {
       // 나갈 때 body 스크롤 복원
@@ -151,6 +156,89 @@ function ChatRoom({ user, onLogin, onLogout }) {
       if (error.response?.status === 401) {
         setMessages([]);
       }
+    }
+  };
+
+  // 댓글 설정 로드
+  const loadRepliesSetting = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/settings/replies_enabled`);
+      setRepliesEnabled(response.data.value === 'true');
+    } catch (error) {
+      console.error('댓글 설정 로딩 실패:', error);
+    }
+  };
+
+  // 댓글 목록 로드
+  const loadReplies = async (messageId) => {
+    try {
+      const response = await axios.get(`${API_URL}/api/messages/${messageId}/replies`);
+      setExpandedReplies(prev => ({
+        ...prev,
+        [messageId]: response.data
+      }));
+    } catch (error) {
+      console.error('댓글 로딩 실패:', error);
+    }
+  };
+
+  // 댓글 토글
+  const toggleReplies = (messageId) => {
+    if (expandedReplies[messageId]) {
+      // 이미 열려있으면 닫기
+      setExpandedReplies(prev => {
+        const newState = { ...prev };
+        delete newState[messageId];
+        return newState;
+      });
+    } else {
+      // 열기
+      loadReplies(messageId);
+    }
+  };
+
+  // 댓글 작성
+  const submitReply = async (messageId) => {
+    if (!replyContent.trim()) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `${API_URL}/api/messages/${messageId}/replies`,
+        { content: replyContent },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      // 댓글 목록에 추가
+      setExpandedReplies(prev => ({
+        ...prev,
+        [messageId]: [...(prev[messageId] || []), response.data]
+      }));
+      
+      setReplyContent('');
+      setReplyingTo(null);
+    } catch (error) {
+      alert(error.response?.data?.detail || '댓글 작성에 실패했습니다');
+    }
+  };
+
+  // 댓글 삭제
+  const deleteReply = async (replyId, messageId) => {
+    if (!window.confirm('댓글을 삭제하시겠습니까?')) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_URL}/api/replies/${replyId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // 댓글 목록에서 제거
+      setExpandedReplies(prev => ({
+        ...prev,
+        [messageId]: prev[messageId].filter(r => r.id !== replyId)
+      }));
+    } catch (error) {
+      alert('댓글 삭제에 실패했습니다');
     }
   };
 
@@ -752,7 +840,82 @@ function ChatRoom({ user, onLogin, onLogout }) {
                 <div className="message-time">{formatTime(message.created_at)}</div>
               </div>
             ) : (
-              renderMessage(message, searchQuery)
+              <>
+                {renderMessage(message, searchQuery)}
+                
+                {/* 댓글 영역 - 관리자/스태프 메시지에만 표시 */}
+                {repliesEnabled && message.user?.role && ['admin', 'staff'].includes(message.user.role) && message.message_type === 'text' && (
+                  <div className="replies-section">
+                    <button 
+                      className="toggle-replies-btn"
+                      onClick={() => toggleReplies(message.id)}
+                    >
+                      💬 {expandedReplies[message.id] ? '댓글 접기' : '댓글 보기'}
+                      {expandedReplies[message.id] && ` (${expandedReplies[message.id].length})`}
+                    </button>
+                    
+                    {/* 댓글 목록 */}
+                    {expandedReplies[message.id] && (
+                      <div className="replies-list">
+                        {expandedReplies[message.id].map(reply => (
+                          <div key={reply.id} className="reply-item">
+                            <div className="reply-header">
+                              <span className="reply-author">{reply.user?.name}</span>
+                              <span className="reply-time">{formatTime(reply.created_at)}</span>
+                              {(user?.id === reply.user_id || user?.role === 'admin') && (
+                                <button 
+                                  className="reply-delete-btn"
+                                  onClick={() => deleteReply(reply.id, message.id)}
+                                >
+                                  🗑️
+                                </button>
+                              )}
+                            </div>
+                            <div className="reply-content">{reply.content}</div>
+                          </div>
+                        ))}
+                        
+                        {/* 댓글 작성 */}
+                        {user && user.is_approved && (
+                          <div className="reply-input-area">
+                            {replyingTo === message.id ? (
+                              <div className="reply-form">
+                                <input
+                                  type="text"
+                                  value={replyContent}
+                                  onChange={(e) => setReplyContent(e.target.value)}
+                                  placeholder="댓글을 입력하세요..."
+                                  className="reply-input"
+                                  onKeyPress={(e) => e.key === 'Enter' && submitReply(message.id)}
+                                />
+                                <button 
+                                  className="reply-submit-btn"
+                                  onClick={() => submitReply(message.id)}
+                                >
+                                  등록
+                                </button>
+                                <button 
+                                  className="reply-cancel-btn"
+                                  onClick={() => { setReplyingTo(null); setReplyContent(''); }}
+                                >
+                                  취소
+                                </button>
+                              </div>
+                            ) : (
+                              <button 
+                                className="write-reply-btn"
+                                onClick={() => setReplyingTo(message.id)}
+                              >
+                                ✏️ 댓글 작성
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
             )}
           </div>
         ))}

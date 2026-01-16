@@ -128,3 +128,27 @@ class NewsResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+# ==================== Reply Schemas ====================
+
+class ReplyCreate(BaseModel):
+    content: str
+
+class ReplyUserResponse(BaseModel):
+    id: int
+    name: str
+    role: str
+    
+    class Config:
+        from_attributes = True
+
+class ReplyResponse(BaseModel):
+    id: int
+    message_id: int
+    user_id: int
+    content: str
+    created_at: datetime
+    user: Optional[ReplyUserResponse] = None
+    
+    class Config:
+        from_attributes = True

@@ -85,3 +85,25 @@ class LinkPreviewCache(Base):
     description = Column(Text, nullable=True)
     image = Column(String(500), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class Reply(Base):
+    """메시지에 대한 댓글(쓰레드)"""
+    __tablename__ = "replies"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    message_id = Column(Integer, ForeignKey("messages.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    message = relationship("Message", backref="replies")
+    user = relationship("User")
+
+class Settings(Base):
+    """시스템 설정"""
+    __tablename__ = "settings"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String(100), unique=True, nullable=False)
+    value = Column(String(500), nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
