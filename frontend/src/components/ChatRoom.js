@@ -13,19 +13,19 @@ const EMOJIS = [
   '🤗', '🤩', '🤔', '🤨', '😐', '😑', '😶', '🙄', '😏', '😣',
   '😥', '😮', '🤐', '😯', '😪', '😫', '😴', '😌', '😛', '😜',
   '😝', '🤤', '😒', '😓', '😔', '😕', '🙃', '🤑', '😲', '☹️',
+  '🙁', '😖', '😞', '😟', '😤', '😢', '😭', '😦', '😧', '😨',
   '👍', '👎', '👌', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉',
   '👆', '👇', '☝️', '✋', '🤚', '🖐', '🖖', '👋', '🤝', '🙏',
-  '💪', '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💔',
-  '🔥', '💯', '💢', '💥', '💫', '💦', '💨', '🎉', '🎊', '🏆'
+  '💪', '🦾', '🦿', '🦵', '🦶', '👂', '🦻', '👃', '🧠', '❤️',
+  '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️',
+  '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮️', '✝️',
+  '🔥', '💯', '💢', '💥', '💫', '💦', '💨', '🕳️', '💬', '👁️',
+  '🗨️', '🗯️', '💭', '💤', '👋', '🎉', '🎊', '🎈', '🎁', '🏆'
 ];
 
-function ChatRoom({ user, onLogout }) {
+function ChatRoom({ user, onLogin, onLogout }) {
   const { roomId } = useParams();
   const navigate = useNavigate();
-  
-  // roomId가 없으면 무료방(1번)으로
-  const currentRoomId = roomId || '1';
-  
   const [room, setRoom] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -34,9 +34,6 @@ function ChatRoom({ user, onLogout }) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
-  const [viewerCount, setViewerCount] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [linkPreviews, setLinkPreviews] = useState({});
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
@@ -55,35 +52,17 @@ function ChatRoom({ user, onLogout }) {
         ws.close();
       }
     };
-  }, [currentRoomId, user]);
+  }, [roomId, user]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  // 접속자 수 설정
-  useEffect(() => {
-    if (room) {
-      // 무료방: 2354명부터, 유료방: 465명부터
-      const baseCount = room.is_free ? 2354 : 465;
-      // 랜덤하게 0~5명 추가
-      const randomAdd = Math.floor(Math.random() * 6);
-      setViewerCount(baseCount + randomAdd);
-      
-      // 30초마다 1명씩 증가 (시뮬레이션)
-      const interval = setInterval(() => {
-        setViewerCount(prev => prev + 1);
-      }, 30000);
-      
-      return () => clearInterval(interval);
-    }
-  }, [room]);
-
   const loadRoomInfo = async () => {
     try {
-      // 무료방 조회
+      // 무료방/유료방 모두 조회
       const freeRoomsRes = await axios.get(`${API_URL}/api/rooms/free`);
-      const currentRoom = freeRoomsRes.data.find(r => r.id === parseInt(currentRoomId));
+      const currentRoom = freeRoomsRes.data.find(r => r.id === parseInt(roomId));
       
       if (currentRoom) {
         setRoom(currentRoom);
@@ -96,10 +75,8 @@ function ChatRoom({ user, onLogout }) {
         const paidRoomsRes = await axios.get(`${API_URL}/api/rooms/paid`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        const paidRoom = paidRoomsRes.data.find(r => r.id === parseInt(currentRoomId));
-        if (paidRoom) {
-          setRoom(paidRoom);
-        }
+        const paidRoom = paidRoomsRes.data.find(r => r.id === parseInt(roomId));
+        setRoom(paidRoom);
       }
     } catch (error) {
       console.error('채팅방 정보 로딩 실패:', error);
@@ -109,12 +86,13 @@ function ChatRoom({ user, onLogout }) {
   const loadMessages = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/rooms/${currentRoomId}/messages`, {
+      const response = await axios.get(`${API_URL}/api/rooms/${roomId}/messages`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
       setMessages(response.data);
     } catch (error) {
       console.error('메시지 로딩 실패:', error);
+      // 로그인 필요한 경우
       if (error.response?.status === 401) {
         setMessages([]);
       }
@@ -125,9 +103,7 @@ function ChatRoom({ user, onLogout }) {
     if (!user) return;
     
     const token = localStorage.getItem('token');
-    if (!token) return;
-    
-    const websocket = new WebSocket(`${WS_URL}/ws/chat/${currentRoomId}?token=${token}`);
+    const websocket = new WebSocket(`${WS_URL}/ws/chat/${roomId}?token=${token}`);
 
     websocket.onopen = () => {
       console.log('WebSocket 연결됨');
@@ -203,7 +179,7 @@ function ChatRoom({ user, onLogout }) {
 
     // 일반 회원은 메시지 전송 불가
     if (user.role === 'member') {
-      alert('관리자와 서브관리자만 메시지를 보낼 수 있습니다.');
+      alert('관리자와 직원만 메시지를 보낼 수 있습니다.');
       return;
     }
 
@@ -225,11 +201,12 @@ function ChatRoom({ user, onLogout }) {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (!user || user.role === 'member') {
-      alert('관리자와 서브관리자만 업로드할 수 있습니다.');
+    if (!user) {
+      alert('로그인이 필요합니다.');
       return;
     }
 
+    // 이미지 파일인지 확인
     if (!file.type.startsWith('image/')) {
       alert('이미지 파일만 업로드 가능합니다.');
       return;
@@ -249,6 +226,7 @@ function ChatRoom({ user, onLogout }) {
         }
       });
 
+      // 이미지 메시지 전송
       if (ws && connected) {
         ws.send(JSON.stringify({
           message: `[이미지: ${response.data.filename}]`,
@@ -269,8 +247,8 @@ function ChatRoom({ user, onLogout }) {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (!user || user.role === 'member') {
-      alert('관리자와 서브관리자만 업로드할 수 있습니다.');
+    if (!user) {
+      alert('로그인이 필요합니다.');
       return;
     }
 
@@ -288,6 +266,7 @@ function ChatRoom({ user, onLogout }) {
         }
       });
 
+      // 파일 메시지 전송
       if (ws && connected) {
         ws.send(JSON.stringify({
           message: `[파일: ${response.data.filename}]`,
@@ -308,115 +287,6 @@ function ChatRoom({ user, onLogout }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // 드래그 앤 드롭 핸들러
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    if (canDeleteMessage()) {
-      setIsDragging(true);
-    }
-  };
-
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
-  const handleDrop = async (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-    
-    if (!canDeleteMessage()) {
-      alert('관리자와 서브관리자만 파일을 업로드할 수 있습니다.');
-      return;
-    }
-
-    const files = e.dataTransfer.files;
-    if (files.length === 0) return;
-
-    const file = files[0];
-    
-    // 이미지인지 확인
-    if (file.type.startsWith('image/')) {
-      await uploadDroppedImage(file);
-    } else {
-      await uploadDroppedFile(file);
-    }
-  };
-
-  const uploadDroppedImage = async (file) => {
-    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
-    const ext = '.' + file.name.split('.').pop().toLowerCase();
-    
-    if (!allowedExtensions.includes(ext)) {
-      alert('지원하지 않는 이미지 형식입니다.');
-      return;
-    }
-
-    setUploadingImage(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const token = localStorage.getItem('token');
-      const response = await axios.post(`${API_URL}/api/upload/image`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      if (ws && connected) {
-        ws.send(JSON.stringify({
-          message: `[이미지: ${response.data.filename}]`,
-          type: 'image',
-          file_url: response.data.url,
-          file_name: response.data.filename
-        }));
-      }
-    } catch (error) {
-      alert('이미지 업로드 실패: ' + (error.response?.data?.detail || error.message));
-    } finally {
-      setUploadingImage(false);
-    }
-  };
-
-  const uploadDroppedFile = async (file) => {
-    const allowedExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.txt', '.zip'];
-    const ext = '.' + file.name.split('.').pop().toLowerCase();
-    
-    if (!allowedExtensions.includes(ext)) {
-      alert('지원하지 않는 파일 형식입니다.');
-      return;
-    }
-
-    setUploadingFile(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const token = localStorage.getItem('token');
-      const response = await axios.post(`${API_URL}/api/upload/file`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      if (ws && connected) {
-        ws.send(JSON.stringify({
-          message: `[파일: ${response.data.filename}]`,
-          type: 'file',
-          file_url: response.data.url,
-          file_name: response.data.filename
-        }));
-      }
-    } catch (error) {
-      alert('파일 업로드 실패: ' + (error.response?.data?.detail || error.message));
-    } finally {
-      setUploadingFile(false);
-    }
-  };
-
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString('ko-KR', { 
@@ -428,7 +298,7 @@ function ChatRoom({ user, onLogout }) {
   const getUserRoleBadge = (role) => {
     const badges = {
       admin: { text: '일타훈장님', class: 'admin' },
-      staff: { text: '일타훈장님', class: 'admin' },
+      staff: { text: '서브관리자', class: 'staff' },
       member: { text: '회원', class: 'member' },
       system: { text: 'SYSTEM', class: 'system' }
     };
@@ -437,88 +307,10 @@ function ChatRoom({ user, onLogout }) {
 
   const canSendMessage = () => {
     if (!room || !user) return false;
+    // 관리자와 직원(서브관리자)만 메시지 전송 가능
     if (user.role === 'member') return false;
     return true;
   };
-
-  const canDeleteMessage = () => {
-    if (!user) return false;
-    return user.role === 'admin' || user.role === 'staff';
-  };
-
-  const deleteMessage = async (messageId) => {
-    if (!window.confirm('이 메시지를 삭제하시겠습니까?')) return;
-    
-    try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`${API_URL}/api/messages/${messageId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      // 메시지 목록에서 제거
-      setMessages(prev => prev.filter(msg => msg.id !== messageId));
-    } catch (error) {
-      alert('삭제 실패: ' + (error.response?.data?.detail || error.message));
-    }
-  };
-
-  // 유튜브 링크에서 비디오 ID 추출
-  const extractYoutubeId = (url) => {
-    const patterns = [
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\s?]+)/,
-      /youtube\.com\/shorts\/([^&\s?]+)/
-    ];
-    for (const pattern of patterns) {
-      const match = url.match(pattern);
-      if (match) return match[1];
-    }
-    return null;
-  };
-
-  // 메시지 내용에서 유튜브 링크 찾기
-  const findYoutubeLinks = (content) => {
-    const urlPattern = /(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)[^\s]+)/g;
-    return content.match(urlPattern) || [];
-  };
-
-  // 일반 URL 찾기 (유튜브 제외)
-  const findRegularLinks = (content) => {
-    const urlPattern = /(https?:\/\/[^\s]+)/g;
-    const allLinks = content.match(urlPattern) || [];
-    return allLinks.filter(link => !extractYoutubeId(link));
-  };
-
-  // 링크 미리보기 가져오기
-  const fetchLinkPreview = async (url, messageId) => {
-    if (linkPreviews[`${messageId}-${url}`]) return;
-    
-    try {
-      const response = await axios.get(`${API_URL}/api/link-preview`, {
-        params: { url }
-      });
-      
-      if (!response.data.error && response.data.image) {
-        setLinkPreviews(prev => ({
-          ...prev,
-          [`${messageId}-${url}`]: response.data
-        }));
-      }
-    } catch (error) {
-      console.log('Link preview fetch failed:', error);
-    }
-  };
-
-  // 메시지에서 링크 미리보기 로드
-  useEffect(() => {
-    messages.forEach(msg => {
-      if (msg.content && msg.message_type !== 'image' && msg.message_type !== 'file') {
-        const links = findRegularLinks(msg.content);
-        links.forEach(link => {
-          fetchLinkPreview(link, msg.id);
-        });
-      }
-    });
-  }, [messages]);
 
   const renderMessage = (message) => {
     if (message.message_type === 'image') {
@@ -529,17 +321,7 @@ function ChatRoom({ user, onLogout }) {
             alt={message.file_name}
             onClick={() => window.open(`${API_URL}${message.file_url}`, '_blank')}
           />
-          <div className="message-footer">
-            <span className="message-time">{formatTime(message.created_at)}</span>
-            {canDeleteMessage() && (
-              <button 
-                className="delete-btn"
-                onClick={() => deleteMessage(message.id)}
-              >
-                🗑️
-              </button>
-            )}
-          </div>
+          <div className="message-time">{formatTime(message.created_at)}</div>
         </div>
       );
     } else if (message.message_type === 'file') {
@@ -553,22 +335,10 @@ function ChatRoom({ user, onLogout }) {
           >
             📎 {message.file_name}
           </a>
-          <div className="message-footer">
-            <span className="message-time">{formatTime(message.created_at)}</span>
-            {canDeleteMessage() && (
-              <button 
-                className="delete-btn"
-                onClick={() => deleteMessage(message.id)}
-              >
-                🗑️
-              </button>
-            )}
-          </div>
+          <div className="message-time">{formatTime(message.created_at)}</div>
         </div>
       );
     } else {
-      const youtubeLinks = findYoutubeLinks(message.content || '');
-      
       return (
         <>
           <div className="message-header">
@@ -577,59 +347,8 @@ function ChatRoom({ user, onLogout }) {
               {getUserRoleBadge(message.user?.role).text}
             </span>
             <span className="message-time">{formatTime(message.created_at)}</span>
-            {canDeleteMessage() && (
-              <button 
-                className="delete-btn"
-                onClick={() => deleteMessage(message.id)}
-              >
-                🗑️
-              </button>
-            )}
           </div>
           <div className="message-content">{message.content}</div>
-          {/* 유튜브 임베드 */}
-          {youtubeLinks.map((link, index) => {
-            const videoId = extractYoutubeId(link);
-            if (videoId) {
-              return (
-                <div key={index} className="youtube-embed">
-                  <iframe
-                    src={`https://www.youtube.com/embed/${videoId}`}
-                    title="YouTube video"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                </div>
-              );
-            }
-            return null;
-          })}
-          {/* 일반 링크 미리보기 */}
-          {findRegularLinks(message.content || '').map((link, index) => {
-            const preview = linkPreviews[`${message.id}-${link}`];
-            if (preview && preview.image) {
-              return (
-                <a 
-                  key={index} 
-                  href={link} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="link-preview-card"
-                >
-                  <img src={preview.image} alt={preview.title} className="link-preview-image" />
-                  <div className="link-preview-info">
-                    <div className="link-preview-title">{preview.title}</div>
-                    {preview.description && (
-                      <div className="link-preview-description">{preview.description}</div>
-                    )}
-                    <div className="link-preview-site">{preview.site_name || new URL(link).hostname}</div>
-                  </div>
-                </a>
-              );
-            }
-            return null;
-          })}
         </>
       );
     }
@@ -638,35 +357,22 @@ function ChatRoom({ user, onLogout }) {
   return (
     <div className="chatroom-container">
       <header className="chatroom-header">
-        {/* 유료방이면 뒤로 버튼 표시 */}
-        {room && !room.is_free ? (
-          <button className="back-button" onClick={() => navigate('/rooms')}>
-            ← 뒤로
-          </button>
-        ) : (
-          <div className="header-spacer"></div>
-        )}
-        
+        <button className="back-button" onClick={() => navigate('/chat')}>
+          ← 뒤로
+        </button>
         <div className="room-title">
-          <h2>{room?.name || '무료 공지방'}</h2>
-          <div className="room-badges">
-            {room?.is_free && <span className="free-badge">무료</span>}
-            <span className="viewer-count">👥 {viewerCount.toLocaleString()}명 시청 중</span>
-          </div>
+          <h2>{room?.name || '채팅방'}</h2>
+          {room?.is_free && <span className="free-badge">무료</span>}
+          {user && (
+            <span className={`connection-status ${connected ? 'connected' : 'disconnected'}`}>
+              {connected ? '● 연결됨' : '○ 연결 안됨'}
+            </span>
+          )}
         </div>
-        
         <div className="header-actions">
           {user ? (
             <>
               <span className="user-name">{user.name}</span>
-              {user.role === 'admin' && (
-                <button className="admin-btn" onClick={() => navigate('/admin')}>
-                  관리자
-                </button>
-              )}
-              <button className="rooms-btn" onClick={() => navigate('/rooms')}>
-                채팅방 목록
-              </button>
               <button className="logout-button" onClick={onLogout}>로그아웃</button>
             </>
           ) : (
@@ -677,26 +383,17 @@ function ChatRoom({ user, onLogout }) {
         </div>
       </header>
 
-      <div 
-        className={`messages-container ${isDragging ? 'dragging' : ''}`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
-        {/* 드래그 오버레이 */}
-        {isDragging && (
-          <div className="drag-overlay">
-            <div className="drag-content">
-              <span>📁</span>
-              <p>파일을 여기에 놓으세요</p>
-            </div>
-          </div>
-        )}
-        {/* 메시지가 없을 때 */}
-        {messages.length === 0 && (
-          <div className="empty-message">
-            <p>📢 {room?.is_free ? '무료' : '유료'} 채팅방입니다</p>
+      <div className="messages-container">
+        {messages.length === 0 && !user && room?.is_free && (
+          <div className="login-prompt-message">
+            <p>📢 무료 채팅방입니다</p>
             <p>일타훈장님과 서브관리자의 리딩을 확인하세요!</p>
+            <button 
+              className="inline-login-button"
+              onClick={() => navigate('/login')}
+            >
+              로그인하고 유료방 이용하기 →
+            </button>
           </div>
         )}
         
@@ -719,75 +416,94 @@ function ChatRoom({ user, onLogout }) {
           </div>
         ))}
         <div ref={messagesEndRef} />
+        
+        {/* 로그인 유도 메시지 (채팅방 하단) */}
+        {!user && room?.is_free && messages.length > 0 && (
+          <div className="bottom-login-prompt">
+            <div className="prompt-content">
+              <p>🔒 <strong>유료 채팅방</strong>에서 더 많은 리딩을 받아보세요!</p>
+              <button 
+                className="prompt-login-button"
+                onClick={() => navigate('/login')}
+              >
+                로그인하기
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 메시지 입력란 */}
       <form className="message-input-container" onSubmit={sendMessage}>
-        {/* 일반 회원 또는 비로그인 - 면책 슬라이드 */}
-        {(!user || user.role === 'member') && (
-          <div className="disclaimer-slide">
-            <div className="disclaimer-track">
-              <span className="disclaimer-text">
-                ⚠️ 당사는 투자 정보 제공에 최선을 다하지만, 투자 결정에 따른 결과에 대해서는 책임지지 않습니다. 투자에 대한 책임은 전적으로 투자자 본인에게 있습니다. &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-              </span>
-              <span className="disclaimer-text">
-                ⚠️ 당사는 투자 정보 제공에 최선을 다하지만, 투자 결정에 따른 결과에 대해서는 책임지지 않습니다. 투자에 대한 책임은 전적으로 투자자 본인에게 있습니다. &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-              </span>
-            </div>
+        {/* 로그인하지 않은 사용자 */}
+        {!user && (
+          <div className="no-user-input">
+            <span>💬 메시지를 보내려면 로그인이 필요합니다</span>
+            <button 
+              type="button"
+              className="input-login-button"
+              onClick={() => navigate('/login')}
+            >
+              로그인
+            </button>
           </div>
         )}
         
-        {/* 관리자/서브관리자인 경우 */}
-        {user && (user.role === 'admin' || user.role === 'staff') && (
+        {/* 로그인한 사용자 */}
+        {user && (
           <>
-            <div className="upload-buttons">
-              <input
-                type="file"
-                ref={imageInputRef}
-                accept="image/*"
-                style={{ display: 'none' }}
-                onChange={handleImageUpload}
-              />
-              <input
-                type="file"
-                ref={fileInputRef}
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.zip"
-                style={{ display: 'none' }}
-                onChange={handleFileUpload}
-              />
-              
-              <button
-                type="button"
-                className="upload-btn"
-                onClick={() => imageInputRef.current?.click()}
-                disabled={uploadingImage || !connected}
-                title="이미지 업로드"
-              >
-                {uploadingImage ? '⏳' : '🖼️'}
-              </button>
-              
-              <button
-                type="button"
-                className="upload-btn"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingFile || !connected}
-                title="파일 업로드"
-              >
-                {uploadingFile ? '⏳' : '📎'}
-              </button>
-              
-              <button
-                type="button"
-                className="emoji-btn"
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                disabled={!connected}
-                title="이모티콘"
-              >
-                😊
-              </button>
-            </div>
+            {/* 파일 업로드 버튼 */}
+            {canSendMessage() && (
+              <div className="upload-buttons">
+                <input
+                  type="file"
+                  ref={imageInputRef}
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={handleImageUpload}
+                />
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.zip"
+                  style={{ display: 'none' }}
+                  onChange={handleFileUpload}
+                />
+                
+                <button
+                  type="button"
+                  className="upload-btn"
+                  onClick={() => imageInputRef.current?.click()}
+                  disabled={uploadingImage || !connected}
+                  title="이미지 업로드"
+                >
+                  {uploadingImage ? '⏳' : '🖼️'}
+                </button>
+                
+                <button
+                  type="button"
+                  className="upload-btn"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingFile || !connected}
+                  title="파일 업로드"
+                >
+                  {uploadingFile ? '⏳' : '📎'}
+                </button>
+                
+                <button
+                  type="button"
+                  className="emoji-btn"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  disabled={!connected}
+                  title="이모티콘"
+                >
+                  😊
+                </button>
+              </div>
+            )}
 
-            {showEmojiPicker && (
+            {/* 이모티콘 선택기 */}
+            {showEmojiPicker && canSendMessage() && (
               <div className="emoji-picker">
                 {EMOJIS.map((emoji, index) => (
                   <button
@@ -806,14 +522,18 @@ function ChatRoom({ user, onLogout }) {
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="메시지를 입력하세요..."
-              disabled={!connected}
+              placeholder={
+                canSendMessage() 
+                  ? "메시지를 입력하세요..." 
+                  : "관리자와 서브관리자만 메시지를 보낼 수 있습니다"
+              }
+              disabled={!canSendMessage() || !connected}
               className="message-input"
             />
             <button 
               type="submit" 
               className="send-button"
-              disabled={!newMessage.trim() || !connected}
+              disabled={!newMessage.trim() || !canSendMessage() || !connected}
             >
               전송
             </button>

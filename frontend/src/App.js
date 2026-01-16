@@ -1,45 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import axios from 'axios';
 import Login from './components/Login';
 import Register from './components/Register';
-import ChatRoom from './components/ChatRoom';
 import ChatList from './components/ChatList';
+import ChatRoom from './components/ChatRoom';
 import AdminPanel from './components/AdminPanel';
 import './App.css';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 저장된 토큰으로 자동 로그인
+    // 로컬 스토리지에서 토큰 확인
     const token = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
+    const userData = localStorage.getItem('user');
     
-    if (token && savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (e) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-      }
+    if (token && userData) {
+      setUser(JSON.parse(userData));
     }
     setLoading(false);
   }, []);
 
   const handleLogin = (userData, token) => {
-    setUser(userData);
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(userData));
+    setUser(userData);
   };
 
   const handleLogout = () => {
-    setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    setUser(null);
   };
 
   if (loading) {
@@ -50,52 +42,38 @@ function App() {
     <Router>
       <div className="App">
         <Routes>
-          {/* 메인 페이지 → 무료 채팅방 (room id 1) 바로 표시 */}
-          <Route 
-            path="/" 
-            element={<ChatRoom user={user} onLogout={handleLogout} />} 
-          />
-          
-          {/* 로그인 */}
+          {/* 공개 라우트 - 로그인 전에도 접근 가능 */}
           <Route 
             path="/login" 
-            element={
-              user ? <Navigate to="/rooms" /> : <Login onLogin={handleLogin} />
-            } 
+            element={user ? <Navigate to="/chat" /> : <Login onLogin={handleLogin} />} 
           />
-          
-          {/* 회원가입 */}
           <Route 
             path="/register" 
-            element={
-              user ? <Navigate to="/rooms" /> : <Register />
-            } 
+            element={user ? <Navigate to="/chat" /> : <Register />} 
           />
           
-          {/* 유료 채팅방 목록 (로그인 후) */}
+          {/* 채팅 라우트 - 로그인 없이도 무료방 접근 가능 */}
           <Route 
-            path="/rooms" 
-            element={<ChatList user={user} onLogout={handleLogout} />} 
+            path="/chat" 
+            element={<ChatList user={user} onLogin={handleLogin} onLogout={handleLogout} />} 
           />
-          
-          {/* 특정 채팅방 */}
           <Route 
             path="/chat/:roomId" 
-            element={<ChatRoom user={user} onLogout={handleLogout} />} 
+            element={<ChatRoom user={user} onLogin={handleLogin} onLogout={handleLogout} />} 
           />
           
-          {/* 관리자 페이지 */}
+          {/* 관리자 라우트 */}
           <Route 
             path="/admin" 
             element={
               user && user.role === 'admin' 
-                ? <AdminPanel user={user} onLogout={handleLogout} />
-                : <Navigate to="/" />
+                ? <AdminPanel user={user} onLogout={handleLogout} /> 
+                : <Navigate to="/chat" />
             } 
           />
           
-          {/* 기타 → 메인으로 */}
-          <Route path="*" element={<Navigate to="/" />} />
+          {/* 기본 라우트 */}
+          <Route path="/" element={<Navigate to="/chat" />} />
         </Routes>
       </div>
     </Router>

@@ -10,33 +10,45 @@ function ChatList({ user, onLogout }) {
   const [freeRooms, setFreeRooms] = useState([]);
   const [paidRooms, setPaidRooms] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showLogin, setShowLogin] = useState(false);
 
   useEffect(() => {
-    loadRooms();
+    loadFreeRooms();
+    if (user) {
+      loadPaidRooms();
+    }
   }, [user]);
 
-  const loadRooms = async () => {
+  const loadFreeRooms = async () => {
     try {
-      // 무료방 로드
-      const freeResponse = await axios.get(`${API_URL}/api/rooms/free`);
-      setFreeRooms(freeResponse.data);
-
-      // 로그인한 경우 유료방도 로드
-      if (user) {
-        const token = localStorage.getItem('token');
-        const paidResponse = await axios.get(`${API_URL}/api/rooms/paid`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setPaidRooms(paidResponse.data);
-      }
+      const response = await axios.get(`${API_URL}/api/rooms/free`);
+      setFreeRooms(response.data);
     } catch (error) {
-      console.error('채팅방 로딩 실패:', error);
+      console.error('무료방 로딩 실패:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRoomClick = (roomId) => {
+  const loadPaidRooms = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/api/rooms/paid`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      setPaidRooms(response.data);
+    } catch (error) {
+      console.error('유료방 로딩 실패:', error);
+    }
+  };
+
+  const handleRoomClick = (roomId, isFree) => {
+    if (!isFree && !user) {
+      setShowLogin(true);
+      return;
+    }
     navigate(`/chat/${roomId}`);
   };
 
@@ -69,7 +81,7 @@ function ChatList({ user, onLogout }) {
       <header className="chat-header">
         <h1>투자학당</h1>
         <div className="header-actions">
-          {user ? (
+          {user && (
             <>
               <div className="user-info">
                 <span className="user-name">{user.name}</span>
@@ -94,7 +106,8 @@ function ChatList({ user, onLogout }) {
                 로그아웃
               </button>
             </>
-          ) : (
+          )}
+          {!user && (
             <button 
               className="login-button"
               onClick={() => navigate('/login')}
@@ -115,7 +128,7 @@ function ChatList({ user, onLogout }) {
               <div 
                 key={room.id} 
                 className="room-card free-room"
-                onClick={() => handleRoomClick(room.id)}
+                onClick={() => handleRoomClick(room.id, true)}
               >
                 <div className="room-icon">{getRoomIcon(room.room_type)}</div>
                 <div className="room-info">
@@ -128,8 +141,8 @@ function ChatList({ user, onLogout }) {
           </div>
         </section>
 
-        {/* 유료 채팅방 (로그인 후에만) */}
-        {user ? (
+        {/* 유료 채팅방 */}
+        {user && (
           <section className="room-section">
             <h2>💎 유료 채팅방</h2>
             <p className="section-description">회원 전용 리딩방 (일타훈장님/서브관리자만 메시지 작성)</p>
@@ -138,7 +151,7 @@ function ChatList({ user, onLogout }) {
                 <div 
                   key={room.id} 
                   className="room-card paid-room"
-                  onClick={() => handleRoomClick(room.id)}
+                  onClick={() => handleRoomClick(room.id, false)}
                 >
                   <div className="room-icon">{getRoomIcon(room.room_type)}</div>
                   <div className="room-info">
@@ -150,7 +163,10 @@ function ChatList({ user, onLogout }) {
               ))}
             </div>
           </section>
-        ) : (
+        )}
+
+        {/* 로그인 유도 */}
+        {!user && (
           <section className="room-section">
             <div className="login-prompt">
               <h2>🔒 유료 채팅방을 이용하시려면</h2>
@@ -164,17 +180,21 @@ function ChatList({ user, onLogout }) {
             </div>
           </section>
         )}
-
-        {/* 무료방 바로가기 */}
-        <section className="room-section">
-          <button 
-            className="goto-free-button"
-            onClick={() => navigate('/')}
-          >
-            📺 무료 공지방 바로가기
-          </button>
-        </section>
       </div>
+
+      {/* 로그인 모달 */}
+      {showLogin && (
+        <div className="modal-overlay" onClick={() => setShowLogin(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>로그인이 필요합니다</h3>
+            <p>유료 채팅방은 로그인 후 이용하실 수 있습니다.</p>
+            <div className="modal-buttons">
+              <button onClick={() => navigate('/login')}>로그인</button>
+              <button onClick={() => setShowLogin(false)}>취소</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

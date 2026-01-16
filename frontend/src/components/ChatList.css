@@ -53,12 +53,6 @@
 .admin-button, .logout-button, .login-button {
   background: #667eea;
   color: white;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.3s ease;
 }
 
 .admin-button:hover, .logout-button:hover, .login-button:hover {
@@ -72,7 +66,7 @@
 }
 
 .room-section {
-  margin-bottom: 40px;
+  margin-bottom: 50px;
 }
 
 .room-section h2 {
@@ -165,68 +159,53 @@
   padding: 15px 40px;
   font-size: 16px;
   font-weight: 600;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
 }
 
-.prompt-login-button:hover {
-  opacity: 0.9;
-  transform: scale(1.02);
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
 }
 
-.goto-free-button {
-  width: 100%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 20px 40px;
-  font-size: 18px;
-  font-weight: 600;
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.goto-free-button:hover {
-  opacity: 0.9;
-  transform: scale(1.01);
-}
-
-.loading {
+.modal-content {
+  background: white;
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   text-align: center;
-  padding: 60px;
-  font-size: 18px;
-  color: #666;
+  max-width: 400px;
 }
 
-/* 모바일 대응 */
-@media (max-width: 768px) {
-  .chat-header {
-    padding: 15px 20px;
-    flex-direction: column;
-    gap: 15px;
-  }
+.modal-content h3 {
+  color: #333;
+  margin-bottom: 15px;
+}
 
-  .header-actions {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
+.modal-content p {
+  color: #666;
+  margin-bottom: 30px;
+}
 
-  .rooms-container {
-    padding: 20px 15px;
-  }
+.modal-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
 
-  .room-list {
-    grid-template-columns: 1fr;
-  }
+.modal-buttons button {
+  padding: 12px 30px;
+  background: #667eea;
+  color: white;
+}
 
-  .room-card {
-    padding: 15px;
-  }
-
-  .room-icon {
-    font-size: 30px;
-  }
+.modal-buttons button:last-child {
+  background: #ccc;
+  color: #333;
 }

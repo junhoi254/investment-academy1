@@ -25,16 +25,6 @@
 .header-actions button {
   background: #667eea;
   color: white;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.3s ease;
-}
-
-.header-actions button:hover {
-  background: #5568d3;
 }
 
 .admin-tabs {
@@ -54,30 +44,17 @@
   font-weight: 600;
   border-bottom: 3px solid transparent;
   transition: all 0.3s ease;
-  cursor: pointer;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .admin-tabs button:hover {
   color: #333;
   background: #f8f9fa;
+  transform: none;
 }
 
 .admin-tabs button.active {
   color: #667eea;
   border-bottom-color: #667eea;
-}
-
-.badge-count {
-  background: #dc3545;
-  color: white;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 12px;
-  font-weight: 700;
 }
 
 .admin-content {
@@ -86,36 +63,17 @@
   padding: 40px 20px;
 }
 
-.approval-section, .users-section, .staff-section, .rooms-section {
+.users-section, .staff-section, .rooms-section {
   background: white;
   padding: 30px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.approval-section h2, .users-section h2, .staff-section h2, .rooms-section h2 {
+.users-section h2, .staff-section h2, .rooms-section h2 {
   color: #333;
-  margin-bottom: 10px;
-  font-size: 20px;
-}
-
-.section-desc {
-  color: #666;
   margin-bottom: 20px;
-  font-size: 14px;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 40px;
-  background: #f8f9fa;
-  border-radius: 12px;
-}
-
-.empty-state p {
-  color: #28a745;
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 20px;
 }
 
 .admin-table {
@@ -184,9 +142,6 @@
   padding: 6px 12px;
   font-size: 12px;
   border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
 }
 
 .btn-approve {
@@ -194,29 +149,9 @@
   color: white;
 }
 
-.btn-approve:hover {
-  background: #218838;
-}
-
-.btn-approve-large {
-  background: #28a745;
-  color: white;
-  padding: 10px 20px !important;
-  font-size: 14px !important;
-  font-weight: 600;
-}
-
-.btn-approve-large:hover {
-  background: #218838;
-}
-
 .btn-password {
   background: #ffc107;
   color: #333;
-}
-
-.btn-password:hover {
-  background: #e0a800;
 }
 
 .btn-expiry {
@@ -224,43 +159,9 @@
   color: white;
 }
 
-.btn-expiry:hover {
-  background: #138496;
-}
-
 .btn-delete {
   background: #dc3545;
   color: white;
-}
-
-.btn-delete:hover {
-  background: #c82333;
-}
-
-.btn-edit {
-  background: #17a2b8;
-  color: white;
-}
-
-.btn-edit:hover {
-  background: #138496;
-}
-
-.form-buttons {
-  display: flex;
-  gap: 10px;
-}
-
-.form-buttons button {
-  flex: 1;
-}
-
-.cancel-btn {
-  background: #6c757d !important;
-}
-
-.cancel-btn:hover {
-  background: #5a6268 !important;
 }
 
 .staff-form, .room-form {
@@ -278,17 +179,6 @@
 .staff-form select, .room-form select,
 .staff-form textarea, .room-form textarea {
   width: 100%;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 14px;
-  outline: none;
-}
-
-.staff-form input:focus, .room-form input:focus,
-.staff-form select:focus, .room-form select:focus,
-.staff-form textarea:focus, .room-form textarea:focus {
-  border-color: #667eea;
 }
 
 .staff-form textarea, .room-form textarea {
@@ -302,14 +192,6 @@
   padding: 12px;
   font-weight: 600;
   align-self: flex-start;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.staff-form button:hover, .room-form button:hover {
-  opacity: 0.9;
 }
 
 .staff-form label, .room-form label {
@@ -317,7 +199,6 @@
   align-items: center;
   gap: 8px;
   color: #333;
-  cursor: pointer;
 }
 
 .staff-form input[type="checkbox"], 
@@ -335,8 +216,6 @@
 @media (max-width: 768px) {
   .admin-header {
     padding: 15px 20px;
-    flex-direction: column;
-    gap: 15px;
   }
   
   .admin-header h1 {
@@ -344,14 +223,13 @@
   }
   
   .admin-tabs {
-    padding: 0 10px;
+    padding: 0 20px;
     overflow-x: auto;
   }
   
   .admin-tabs button {
-    padding: 12px 15px;
+    padding: 12px 20px;
     white-space: nowrap;
-    font-size: 13px;
   }
   
   .admin-content {
@@ -359,11 +237,11 @@
   }
   
   .admin-table {
-    font-size: 13px;
+    font-size: 14px;
   }
   
   .admin-table th, .admin-table td {
-    padding: 8px 6px;
+    padding: 8px;
   }
   
   .actions {
@@ -372,9 +250,5 @@
   
   .actions button {
     width: 100%;
-  }
-
-  .staff-form, .room-form {
-    padding: 15px;
   }
 }
