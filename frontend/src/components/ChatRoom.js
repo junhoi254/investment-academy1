@@ -630,13 +630,11 @@ function ChatRoom({ user, onLogin, onLogout }) {
           {user ? (
             <>
               <span className="user-name">{user.name}</span>
-              <button className="icon-button logout-button" onClick={onLogout} title="로그아웃">
-                🚪
-              </button>
+              <button className="logout-button" onClick={onLogout}>로그아웃</button>
             </>
           ) : (
-            <button className="icon-button login-button" onClick={() => navigate('/login')} title="로그인">
-              👤
+            <button className="login-button" onClick={() => navigate('/login')}>
+              로그인
             </button>
           )}
         </div>
