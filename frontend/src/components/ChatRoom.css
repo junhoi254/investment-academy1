@@ -1,5 +1,4 @@
-/* 채팅방 - 색상만 검은색으로 변경 */
-
+/* 채팅방 컨테이너 */
 .chatroom-container {
   display: flex;
   flex-direction: column;
@@ -9,17 +8,18 @@
   overflow: hidden;
 }
 
+/* 헤더 */
 .chatroom-header {
   background: #000000;
   padding: 15px 20px;
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 15px;
   border-bottom: 1px solid #333;
   flex-shrink: 0;
 }
 
-/* 뒤로 버튼 - 파란색 → 검은색 */
 .back-button {
   background: #000000;
   color: #ffffff;
@@ -29,6 +29,8 @@
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .back-button:hover {
@@ -39,12 +41,16 @@
 .room-title {
   flex: 1;
   text-align: center;
+  min-width: 0;
 }
 
 .room-title h2 {
   color: #ffffff;
   font-size: 18px;
   margin: 0 0 5px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .free-badge {
@@ -54,11 +60,14 @@
   border-radius: 15px;
   font-size: 12px;
   font-weight: 600;
+  display: inline-block;
 }
 
 .connection-status {
+  display: block;
   font-size: 12px;
   color: #888;
+  margin-top: 3px;
 }
 
 .connection-status.connected {
@@ -71,11 +80,12 @@
 
 .header-actions {
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
-/* 검색 버튼 - 파란색 → 검은색 */
 .search-toggle-btn {
   background: #000000;
   color: #ffffff;
@@ -84,6 +94,7 @@
   border-radius: 25px;
   cursor: pointer;
   font-size: 16px;
+  flex-shrink: 0;
 }
 
 .search-toggle-btn:hover {
@@ -94,9 +105,9 @@
   color: #ffffff;
   font-weight: 500;
   font-size: 14px;
+  white-space: nowrap;
 }
 
-/* 로그인/로그아웃 버튼 - 파란색 → 검은색 */
 .icon-button,
 .login-button,
 .logout-button {
@@ -108,6 +119,8 @@
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .icon-button:hover,
@@ -122,6 +135,7 @@
   background: #000000;
   padding: 10px 20px;
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 10px;
   border-bottom: 1px solid #333;
@@ -149,6 +163,7 @@
 .search-count {
   color: #888;
   font-size: 12px;
+  white-space: nowrap;
 }
 
 .search-close-btn {
@@ -158,6 +173,7 @@
   padding: 8px 12px;
   border-radius: 50%;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .search-info {
@@ -209,9 +225,11 @@
 
 .message-header {
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 8px;
   margin-bottom: 5px;
+  flex-wrap: wrap;
 }
 
 .sender-name {
@@ -261,7 +279,7 @@
   color: #ff4444;
 }
 
-/* 말풍선 - 기존 색상 유지 */
+/* 말풍선 */
 .message-content {
   background: #e8e8e8;
   color: #000000;
@@ -270,6 +288,7 @@
   border-top-left-radius: 4px;
   line-height: 1.5;
   font-size: 15px;
+  word-wrap: break-word;
 }
 
 .message.own .message-content {
@@ -288,7 +307,7 @@
   text-decoration: underline;
 }
 
-/* 시스템/시그널 메시지 */
+/* 시스템/시그널 */
 .system-message {
   text-align: center;
   color: #888;
@@ -470,15 +489,16 @@
   100% { transform: translateX(-50%); }
 }
 
-/* 업로드 버튼 */
 .upload-buttons {
   display: inline-flex;
+  flex-direction: row;
   gap: 5px;
   background: #000000;
   border: 1px solid #444;
   border-radius: 20px;
   padding: 5px 10px;
   margin-right: 10px;
+  vertical-align: middle;
 }
 
 .upload-btn, .emoji-btn {
@@ -519,7 +539,6 @@
   background: #333;
 }
 
-/* 입력창 - 흰색 → 검은색 */
 .message-input {
   padding: 12px 20px;
   border: 1px solid #444;
@@ -528,7 +547,9 @@
   background: #000000;
   color: #ffffff;
   margin-right: 10px;
+  vertical-align: middle;
   width: calc(100% - 180px);
+  box-sizing: border-box;
 }
 
 .message-input::placeholder {
@@ -540,7 +561,6 @@
   border-color: #666;
 }
 
-/* 전송 버튼 - 파란색 → 검은색 */
 .send-button {
   background: #000000;
   color: #ffffff;
@@ -550,6 +570,7 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  vertical-align: middle;
 }
 
 .send-button:hover {
@@ -593,9 +614,15 @@
 @media (max-width: 768px) {
   .chatroom-header {
     padding: 10px 15px;
+    gap: 10px;
   }
   
-  .back-button, .icon-button, .login-button, .logout-button {
+  .back-button {
+    padding: 8px 15px;
+    font-size: 13px;
+  }
+  
+  .icon-button, .login-button, .logout-button {
     padding: 8px 15px;
     font-size: 13px;
   }
@@ -614,5 +641,9 @@
   
   .message-input {
     width: calc(100% - 100px);
+  }
+  
+  .send-button {
+    padding: 10px 15px;
   }
 }

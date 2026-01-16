@@ -1,5 +1,4 @@
-/* ===== 로그인 페이지 - 다크 테마 ===== */
-
+/* 로그인 페이지 */
 .login-container {
   min-height: 100vh;
   display: flex;
@@ -10,51 +9,49 @@
   padding: 20px;
 }
 
-/* 로고 이미지 */
 .login-logo {
-  width: 280px;
-  max-width: 100%;
+  width: 300px;
+  max-width: 90%;
   margin-bottom: 30px;
   border-radius: 16px;
 }
 
 .login-box {
   background: #000000;
-  padding: 30px;
-  border-radius: 16px;
+  padding: 40px;
+  border-radius: 20px;
   width: 100%;
-  max-width: 360px;
+  max-width: 400px;
   border: 1px solid #333;
+  text-align: center;
 }
 
 .login-box h2 {
-  text-align: center;
   color: #ffffff;
-  margin-bottom: 24px;
-  font-size: 22px;
+  margin-bottom: 30px;
+  font-size: 24px;
   font-weight: 700;
 }
 
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 15px;
 }
 
 .login-form input {
   width: 100%;
-  padding: 14px 16px;
+  padding: 15px 20px;
   border: 1px solid #444;
-  border-radius: 10px;
-  font-size: 15px;
+  border-radius: 12px;
+  font-size: 16px;
   background: #000000;
   color: #ffffff;
-  transition: border-color 0.2s;
   box-sizing: border-box;
 }
 
 .login-form input::placeholder {
-  color: #666;
+  color: #888;
 }
 
 .login-form input:focus {
@@ -66,14 +63,13 @@
   width: 100%;
   background: #000000;
   color: #ffffff;
-  padding: 14px;
+  padding: 15px;
   border: 1px solid #444;
-  border-radius: 10px;
-  font-size: 15px;
+  border-radius: 12px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
-  margin-top: 8px;
+  margin-top: 10px;
 }
 
 .login-form button:hover {
@@ -82,14 +78,13 @@
 }
 
 .login-form button:disabled {
-  color: #666;
-  border-color: #333;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
 .login-links {
+  margin-top: 25px;
   text-align: center;
-  margin-top: 20px;
 }
 
 .login-links a {
@@ -103,27 +98,22 @@
 }
 
 .error-message {
-  background: #1a0a0a;
+  background: #1a0000;
   color: #ff4444;
   padding: 12px;
   border-radius: 8px;
   font-size: 14px;
   text-align: center;
   border: 1px solid #441111;
-  margin-bottom: 12px;
+  margin-bottom: 15px;
 }
 
-/* 모바일 */
 @media (max-width: 768px) {
   .login-logo {
-    width: 240px;
+    width: 250px;
   }
   
   .login-box {
-    padding: 24px 20px;
-  }
-  
-  .login-box h2 {
-    font-size: 20px;
+    padding: 30px 20px;
   }
 }
