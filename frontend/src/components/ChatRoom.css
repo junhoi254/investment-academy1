@@ -132,6 +132,28 @@
   margin-left: auto;
 }
 
+/* 메시지 삭제 버튼 */
+.delete-message-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  opacity: 0.5;
+  transition: all 0.2s ease;
+  margin-left: 8px;
+}
+
+.delete-message-btn:hover {
+  background: #ff4d4f;
+  opacity: 1;
+}
+
+.message:hover .delete-message-btn {
+  opacity: 1;
+}
+
 .message-content {
   background: white;
   padding: 12px 16px;
@@ -261,6 +283,32 @@
   padding: 8px;
   border-radius: 12px;
   max-width: 100%;
+  position: relative;
+}
+
+.message-image .image-delete,
+.message-file .file-delete {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(255, 77, 79, 0.8);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  z-index: 10;
+}
+
+.message-image:hover .image-delete,
+.message-file:hover .file-delete {
+  opacity: 1;
+}
+
+.message-file {
+  position: relative;
 }
 
 .message-image img {
@@ -322,6 +370,113 @@
   background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
 }
 
+/* 더보기 버튼 */
+.load-more-container {
+  text-align: center;
+  padding: 15px 0;
+}
+
+.load-more-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 10px 24px;
+  border-radius: 20px;
+  border: none;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.load-more-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.load-more-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 링크 스타일 */
+.message-link {
+  color: #667eea;
+  text-decoration: none;
+  word-break: break-all;
+  font-weight: 600;
+}
+
+.message-link:hover {
+  text-decoration: underline;
+}
+
+/* 링크 프리뷰 */
+.link-previews {
+  margin-top: 10px;
+}
+
+.link-preview {
+  background: #f8f9fa;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-top: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.link-card {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.2s;
+}
+
+.link-card:hover {
+  background: #f0f0f0;
+}
+
+.link-icon {
+  font-size: 32px;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.link-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.link-title {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.link-url {
+  font-size: 12px;
+  color: #666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 유튜브 프리뷰 */
+.youtube-preview {
+  padding: 0;
+  background: #000;
+}
+
+.youtube-preview iframe {
+  display: block;
+  width: 100%;
+  border-radius: 12px;
+}
+
 /* 모바일 대응 */
 @media (max-width: 768px) {
   .message {
@@ -338,6 +493,10 @@
   
   .messages-container {
     padding: 10px;
+  }
+  
+  .link-preview iframe {
+    height: 180px;
   }
 }
 
