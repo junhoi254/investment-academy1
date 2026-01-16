@@ -1,44 +1,56 @@
-/* 회원가입 페이지 다크 테마 */
+/* ===== 회원가입 페이지 - 다크 테마 ===== */
+
 .register-container {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   background: #000000;
   padding: 20px;
 }
 
+/* 로고 이미지 */
+.register-logo {
+  width: 280px;
+  max-width: 100%;
+  margin-bottom: 30px;
+  border-radius: 16px;
+}
+
 .register-box {
-  background: #0a0a0a;
-  padding: 40px;
-  border-radius: 20px;
+  background: #000000;
+  padding: 30px;
+  border-radius: 16px;
   width: 100%;
-  max-width: 400px;
-  border: 1px solid #1a1a1a;
+  max-width: 360px;
+  border: 1px solid #333;
 }
 
 .register-box h2 {
   text-align: center;
   color: #ffffff;
-  margin-bottom: 30px;
-  font-size: 24px;
+  margin-bottom: 24px;
+  font-size: 22px;
   font-weight: 700;
 }
 
 .register-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .register-form input {
-  padding: 16px;
-  border: 1px solid #333;
-  border-radius: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid #444;
+  border-radius: 10px;
   font-size: 15px;
-  background: #1a1a1a;
+  background: #000000;
   color: #ffffff;
   transition: border-color 0.2s;
+  box-sizing: border-box;
 }
 
 .register-form input::placeholder {
@@ -47,39 +59,41 @@
 
 .register-form input:focus {
   outline: none;
-  border-color: #0095f6;
+  border-color: #666;
 }
 
 .register-form button {
-  background: #ffffff;
-  color: #000000;
-  padding: 16px;
-  border: none;
-  border-radius: 12px;
-  font-size: 16px;
+  width: 100%;
+  background: #000000;
+  color: #ffffff;
+  padding: 14px;
+  border: 1px solid #444;
+  border-radius: 10px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 .register-form button:hover {
-  background: #e0e0e0;
+  background: #1a1a1a;
+  border-color: #666;
 }
 
 .register-form button:disabled {
-  background: #333;
   color: #666;
+  border-color: #333;
   cursor: not-allowed;
 }
 
 .register-links {
   text-align: center;
-  margin-top: 24px;
+  margin-top: 20px;
 }
 
 .register-links a {
-  color: #0095f6;
+  color: #58a6ff;
   text-decoration: none;
   font-size: 14px;
 }
@@ -95,7 +109,8 @@
   border-radius: 8px;
   font-size: 14px;
   text-align: center;
-  border: 1px solid #330000;
+  border: 1px solid #441111;
+  margin-bottom: 12px;
 }
 
 .success-message {
@@ -105,16 +120,21 @@
   border-radius: 8px;
   font-size: 14px;
   text-align: center;
-  border: 1px solid #003300;
+  border: 1px solid #114411;
+  margin-bottom: 12px;
 }
 
 /* 모바일 */
 @media (max-width: 768px) {
+  .register-logo {
+    width: 240px;
+  }
+  
   .register-box {
-    padding: 30px 24px;
+    padding: 24px 20px;
   }
   
   .register-box h2 {
-    font-size: 22px;
+    font-size: 20px;
   }
 }

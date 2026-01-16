@@ -612,7 +612,7 @@ function ChatRoom({ user, onLogin, onLogout }) {
     <div className="chatroom-container">
       <header className="chatroom-header">
         <button className="back-button" onClick={() => navigate('/chat')}>
-          ← 뒤로
+          ←
         </button>
         <div className="room-title">
           <h2>{room?.name || '채팅방'}</h2>
@@ -630,11 +630,13 @@ function ChatRoom({ user, onLogin, onLogout }) {
           {user ? (
             <>
               <span className="user-name">{user.name}</span>
-              <button className="logout-button" onClick={onLogout}>로그아웃</button>
+              <button className="icon-button logout-button" onClick={onLogout} title="로그아웃">
+                🚪
+              </button>
             </>
           ) : (
-            <button className="login-button" onClick={() => navigate('/login')}>
-              로그인
+            <button className="icon-button login-button" onClick={() => navigate('/login')} title="로그인">
+              👤
             </button>
           )}
         </div>
