@@ -475,11 +475,22 @@ async def receive_mt4_position(position_data: schemas.MT4Position, api_key: str,
 # ==================== URL 미리보기 API ====================
 
 @app.get("/api/link-preview")
-async def get_link_preview(url: str):
-    """URL의 OG 메타데이터 가져오기"""
+async def get_link_preview(url: str, db: Session = Depends(get_db)):
+    """URL의 OG 메타데이터 가져오기 (캐시 사용)"""
     import aiohttp
     from bs4 import BeautifulSoup
     
+    # 1. 캐시 확인
+    cached = db.query(models.LinkPreviewCache).filter(models.LinkPreviewCache.url == url).first()
+    if cached:
+        return {
+            "url": url,
+            "title": cached.title or "",
+            "description": cached.description or "",
+            "image": cached.image or ""
+        }
+    
+    # 2. 캐시 없으면 크롤링
     try:
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -499,9 +510,19 @@ async def get_link_preview(url: str):
                 og_image = soup.find('meta', property='og:image')
                 
                 # 일반 태그 fallback
-                title = og_title['content'] if og_title else (soup.title.string if soup.title else url)
+                title = og_title['content'] if og_title else (soup.title.string if soup.title else "")
                 description = og_desc['content'] if og_desc else ""
                 image = og_image['content'] if og_image else ""
+                
+                # 3. 캐시에 저장
+                new_cache = models.LinkPreviewCache(
+                    url=url,
+                    title=title[:255] if title else "",
+                    description=description[:500] if description else "",
+                    image=image[:500] if image else ""
+                )
+                db.add(new_cache)
+                db.commit()
                 
                 return {
                     "url": url,

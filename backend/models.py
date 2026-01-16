@@ -75,3 +75,13 @@ class News(Base):
     source = Column(String(100), nullable=True)
     published_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class LinkPreviewCache(Base):
+    __tablename__ = "link_preview_cache"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    url = Column(String(500), unique=True, index=True, nullable=False)
+    title = Column(String(255), nullable=True)
+    description = Column(Text, nullable=True)
+    image = Column(String(500), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
