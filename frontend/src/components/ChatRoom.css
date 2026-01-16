@@ -759,6 +759,91 @@
   }
 }
 
+/* 면책조항 슬라이드 */
+.disclaimer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.disclaimer-slide {
+  background: white;
+  border-radius: 20px;
+  max-width: 400px;
+  width: 90%;
+  margin: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.4s ease;
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.disclaimer-content {
+  padding: 30px;
+  text-align: center;
+}
+
+.disclaimer-content h2 {
+  color: #e74c3c;
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+}
+
+.disclaimer-text {
+  text-align: left;
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.disclaimer-text p {
+  margin: 12px 0;
+  color: #333;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.disclaimer-accept-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 14px 40px;
+  border-radius: 25px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.disclaimer-accept-btn:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
 /* 로그인 버튼 스타일 */
 .login-button {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);

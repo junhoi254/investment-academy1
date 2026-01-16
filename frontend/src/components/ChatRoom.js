@@ -36,9 +36,20 @@ function ChatRoom({ user, onLogin, onLogout }) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [disclaimerAccepted, setDisclaimerAccepted] = useState(() => {
+    // 세션 스토리지에서 면책조항 확인 여부 가져오기
+    return sessionStorage.getItem('disclaimerAccepted') === 'true';
+  });
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
+
+  // 면책조항 수락 시 세션 스토리지에 저장
+  useEffect(() => {
+    if (disclaimerAccepted) {
+      sessionStorage.setItem('disclaimerAccepted', 'true');
+    }
+  }, [disclaimerAccepted]);
 
   useEffect(() => {
     loadRoomInfo();
@@ -344,19 +355,40 @@ function ChatRoom({ user, onLogin, onLogout }) {
     return { text, urls };
   };
 
-  // 링크 미리보기 컴포넌트
+  // 링크 미리보기 컴포넌트 (로컬 캐시 사용)
   const LinkPreviewCard = ({ url }) => {
     const [preview, setPreview] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
       const fetchPreview = async () => {
+        // 1. 로컬 캐시 확인
+        const cacheKey = `link_preview_${btoa(url).slice(0, 50)}`;
+        const cached = localStorage.getItem(cacheKey);
+        
+        if (cached) {
+          try {
+            setPreview(JSON.parse(cached));
+            setLoading(false);
+            return;
+          } catch (e) {
+            localStorage.removeItem(cacheKey);
+          }
+        }
+
+        // 2. 캐시 없으면 API 호출
         try {
           const response = await axios.get(`${API_URL}/api/link-preview?url=${encodeURIComponent(url)}`);
-          setPreview(response.data);
+          const data = response.data;
+          setPreview(data);
+          
+          // 3. 로컬 캐시에 저장 (7일)
+          localStorage.setItem(cacheKey, JSON.stringify(data));
         } catch (error) {
           console.error('미리보기 로딩 실패:', error);
-          setPreview({ url, title: new URL(url).hostname, description: '', image: '' });
+          // 실패시 기본값
+          const fallback = { url, title: new URL(url).hostname, description: '', image: '' };
+          setPreview(fallback);
         }
         setLoading(false);
       };
@@ -366,12 +398,12 @@ function ChatRoom({ user, onLogin, onLogout }) {
     if (loading) {
       return (
         <div className="link-preview loading">
-          <div className="link-card">
-            <div className="link-icon">⏳</div>
+          <a href={url} target="_blank" rel="noopener noreferrer" className="link-card">
             <div className="link-info">
-              <div className="link-title">로딩 중...</div>
+              <div className="link-title">⏳ 로딩 중...</div>
+              <div className="link-url">{new URL(url).hostname}</div>
             </div>
-          </div>
+          </a>
         </div>
       );
     }
@@ -539,16 +571,26 @@ function ChatRoom({ user, onLogin, onLogout }) {
       </header>
 
       <div className="messages-container">
-        {messages.length === 0 && !user && room?.is_free && (
-          <div className="login-prompt-message">
-            <p>📢 무료 채팅방입니다</p>
-            <p>일타훈장님과 서브관리자의 리딩을 확인하세요!</p>
-            <button 
-              className="inline-login-button"
-              onClick={() => navigate('/login')}
-            >
-              로그인하고 유료방 이용하기 →
-            </button>
+        {/* 면책조항 슬라이드 (로그인 안 한 경우) */}
+        {!user && !disclaimerAccepted && (
+          <div className="disclaimer-overlay">
+            <div className="disclaimer-slide">
+              <div className="disclaimer-content">
+                <h2>⚠️ 투자 유의사항</h2>
+                <div className="disclaimer-text">
+                  <p>📌 본 채팅방의 모든 정보는 <strong>참고용</strong>이며, 투자 권유가 아닙니다.</p>
+                  <p>📌 투자에 대한 모든 판단과 결정은 <strong>본인의 책임</strong>입니다.</p>
+                  <p>📌 과거의 수익률이 미래의 수익률을 보장하지 않습니다.</p>
+                  <p>📌 원금 손실의 위험이 있으므로 신중히 투자하시기 바랍니다.</p>
+                </div>
+                <button 
+                  className="disclaimer-accept-btn"
+                  onClick={() => setDisclaimerAccepted(true)}
+                >
+                  확인했습니다
+                </button>
+              </div>
+            </div>
           </div>
         )}
         
@@ -586,21 +628,6 @@ function ChatRoom({ user, onLogin, onLogout }) {
           </div>
         ))}
         <div ref={messagesEndRef} />
-        
-        {/* 로그인 유도 메시지 (채팅방 하단) */}
-        {!user && room?.is_free && messages.length > 0 && (
-          <div className="bottom-login-prompt">
-            <div className="prompt-content">
-              <p>🔒 <strong>유료 채팅방</strong>에서 더 많은 리딩을 받아보세요!</p>
-              <button 
-                className="prompt-login-button"
-                onClick={() => navigate('/login')}
-              >
-                로그인하기
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* 메시지 입력란 */}

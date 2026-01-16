@@ -72,8 +72,8 @@ function App() {
             } 
           />
           
-          {/* 기본 라우트 */}
-          <Route path="/" element={<Navigate to="/chat" />} />
+          {/* 기본 라우트 - 바로 무료 채팅방으로 */}
+          <Route path="/" element={<Navigate to="/chat/1" />} />
         </Routes>
       </div>
     </Router>
