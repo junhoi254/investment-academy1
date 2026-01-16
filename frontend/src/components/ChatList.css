@@ -1,19 +1,20 @@
 .chat-list-container {
   min-height: 100vh;
-  background: #f5f7fa;
+  background: #000000;
 }
 
 .chat-header {
-  background: white;
+  background: #1a1a1a;
   padding: 20px 40px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-bottom: 1px solid #333;
 }
 
 .chat-header h1 {
-  color: #333;
+  color: #ffffff;
   font-size: 24px;
 }
 
@@ -31,7 +32,7 @@
 
 .user-name {
   font-weight: 600;
-  color: #333;
+  color: #ffffff;
 }
 
 .user-role {
@@ -43,7 +44,7 @@
 }
 
 .days-remaining {
-  background: #28a745;
+  background: #22c55e;
   color: white;
   padding: 4px 12px;
   border-radius: 12px;
@@ -53,6 +54,10 @@
 .admin-button, .logout-button, .login-button {
   background: #667eea;
   color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
 .admin-button:hover, .logout-button:hover, .login-button:hover {
@@ -70,13 +75,13 @@
 }
 
 .room-section h2 {
-  color: #333;
+  color: #ffffff;
   margin-bottom: 10px;
   font-size: 24px;
 }
 
 .section-description {
-  color: #666;
+  color: #888;
   margin-bottom: 20px;
 }
 
@@ -87,10 +92,11 @@
 }
 
 .room-card {
-  background: white;
+  background: #1a1a1a;
   padding: 20px;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border: 1px solid #333;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
@@ -100,7 +106,8 @@
 
 .room-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  border-color: #444;
 }
 
 .room-icon {
@@ -112,18 +119,18 @@
 }
 
 .room-info h3 {
-  color: #333;
+  color: #ffffff;
   margin-bottom: 5px;
   font-size: 18px;
 }
 
 .room-info p {
-  color: #666;
+  color: #888;
   font-size: 14px;
 }
 
 .room-badge {
-  background: #28a745;
+  background: #22c55e;
   color: white;
   padding: 6px 14px;
   border-radius: 20px;
@@ -137,19 +144,20 @@
 
 .login-prompt {
   text-align: center;
-  background: white;
+  background: #1a1a1a;
   padding: 60px 40px;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border: 1px solid #333;
 }
 
 .login-prompt h2 {
-  color: #333;
+  color: #ffffff;
   margin-bottom: 15px;
 }
 
 .login-prompt p {
-  color: #666;
+  color: #888;
   margin-bottom: 30px;
 }
 
@@ -159,6 +167,9 @@
   padding: 15px 40px;
   font-size: 16px;
   font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
 }
 
 .modal-overlay {
@@ -167,7 +178,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.8);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -175,21 +186,22 @@
 }
 
 .modal-content {
-  background: white;
+  background: #1a1a1a;
   padding: 40px;
   border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  border: 1px solid #333;
   text-align: center;
   max-width: 400px;
 }
 
 .modal-content h3 {
-  color: #333;
+  color: #ffffff;
   margin-bottom: 15px;
 }
 
 .modal-content p {
-  color: #666;
+  color: #888;
   margin-bottom: 30px;
 }
 
@@ -203,11 +215,14 @@
   padding: 12px 30px;
   background: #667eea;
   color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
 .modal-buttons button:last-child {
-  background: #ccc;
-  color: #333;
+  background: #444;
+  color: #fff;
 }
 
 /* 쓰레드(게시판) 스타일 */
@@ -222,10 +237,11 @@
 }
 
 .thread-card {
-  background: white;
+  background: #1a1a1a;
   padding: 16px 20px;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  border: 1px solid #333;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
@@ -235,12 +251,13 @@
 
 .thread-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  border-color: #444;
 }
 
 .thread-card.pinned {
-  background: linear-gradient(135deg, #fff9e6 0%, #fff5d6 100%);
-  border-left: 4px solid #ffc107;
+  background: #1a1a0a;
+  border-left: 4px solid #fbbf24;
 }
 
 .thread-icon {
@@ -255,7 +272,7 @@
 }
 
 .thread-info h3 {
-  color: #333;
+  color: #ffffff;
   font-size: 15px;
   margin-bottom: 5px;
   white-space: nowrap;
@@ -264,7 +281,7 @@
 }
 
 .pin-label {
-  color: #ffc107;
+  color: #fbbf24;
   margin-right: 5px;
 }
 
@@ -297,8 +314,42 @@
   color: #888;
 }
 
-/* 모바일 쓰레드 스타일 */
+/* 공지 게시판 카드 */
+.room-card.notice-board {
+  background: #1a1a0a;
+  border-left: 4px solid #fbbf24;
+}
+
+.room-card.notice-board:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(251, 191, 36, 0.2);
+}
+
+.room-badge.notice {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: #000;
+}
+
+/* 모바일 스타일 */
 @media (max-width: 768px) {
+  .chat-header {
+    padding: 15px 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .chat-header h1 {
+    font-size: 20px;
+  }
+  
+  .rooms-container {
+    padding: 20px 15px;
+  }
+  
+  .room-list {
+    grid-template-columns: 1fr;
+  }
+  
   .thread-card {
     padding: 12px 15px;
   }
@@ -316,31 +367,4 @@
     flex-direction: row;
     gap: 10px;
   }
-}
-
-/* 공지 게시판 카드 */
-.room-card.notice-board {
-  background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
-  border-left: 4px solid #667eea;
-}
-
-.room-badge.notice {
-  background: #667eea;
-  color: white;
-}
-
-/* 공지 게시판 카드 스타일 */
-.room-card.notice-board {
-  background: linear-gradient(135deg, #fff9e6 0%, #fff5d6 100%);
-  border-left: 4px solid #ffc107;
-}
-
-.room-card.notice-board:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(255, 193, 7, 0.3);
-}
-
-.room-badge.notice {
-  background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
-  color: white;
 }

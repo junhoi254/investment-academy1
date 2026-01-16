@@ -4,15 +4,17 @@
   align-items: center;
   min-height: 100vh;
   padding: 20px;
+  background: #000000;
 }
 
 .login-box {
-  background: white;
+  background: #1a1a1a;
   padding: 40px;
   border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   width: 100%;
   max-width: 400px;
+  border: 1px solid #333;
 }
 
 .login-logo {
@@ -21,25 +23,19 @@
 }
 
 .login-logo img {
-  width: 150px;
-  height: 150px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
   object-fit: cover;
-  border: 4px solid #667eea;
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
-  transition: all 0.3s ease;
-}
-
-.login-logo img:hover {
-  transform: scale(1.05);
-  box-shadow: 0 12px 30px rgba(102, 126, 234, 0.5);
+  border: 3px solid #667eea;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 }
 
 .login-box h1 {
   text-align: center;
-  color: #333;
+  color: #ffffff;
   margin-bottom: 10px;
-  font-size: 28px;
+  font-size: 24px;
 }
 
 .login-subtitle {
@@ -57,22 +53,38 @@
 .form-group label {
   display: block;
   margin-bottom: 8px;
-  color: #555;
+  color: #ffffff;
   font-weight: 600;
 }
 
 .form-group input {
   width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #444;
+  border-radius: 10px;
+  font-size: 15px;
+  background: #000000;
+  color: #ffffff;
+  box-sizing: border-box;
+}
+
+.form-group input::placeholder {
+  color: #666;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #667eea;
 }
 
 .error-message {
-  background: #fee;
-  color: #c33;
+  background: #2a1515;
+  color: #ff6b6b;
   padding: 12px;
   border-radius: 8px;
   margin-bottom: 20px;
   text-align: center;
-  border: 1px solid #fcc;
+  border: 1px solid #ff6b6b;
 }
 
 .login-button {
@@ -82,16 +94,24 @@
   padding: 14px;
   font-size: 16px;
   font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
 }
 
 .login-button:hover:not(:disabled) {
   background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
 }
 
+.login-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .register-link {
   text-align: center;
   margin-top: 20px;
-  color: #666;
+  color: #888;
 }
 
 .register-link a {
