@@ -39,12 +39,15 @@ function ChatRoom({ user, onLogin, onLogout }) {
     // 세션 스토리지에서 면책조항 확인 여부 가져오기
     return sessionStorage.getItem('disclaimerAccepted') === 'true';
   });
+  const [searchMode, setSearchMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
+  const searchInputRef = useRef(null);
 
   // 면책조항 수락 시 세션 스토리지에 저장
   useEffect(() => {
@@ -377,6 +380,34 @@ function ChatRoom({ user, onLogin, onLogout }) {
     }
   };
 
+  // 검색 모드 토글
+  const toggleSearchMode = () => {
+    setSearchMode(!searchMode);
+    setSearchQuery('');
+    if (!searchMode) {
+      setTimeout(() => searchInputRef.current?.focus(), 100);
+    }
+  };
+
+  // 메시지 필터링
+  const filteredMessages = searchQuery.trim() 
+    ? messages.filter(msg => 
+        msg.content?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        msg.user?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : messages;
+
+  // 검색어 하이라이트
+  const highlightText = (text, query) => {
+    if (!query.trim() || !text) return text;
+    const parts = text.split(new RegExp(`(${query})`, 'gi'));
+    return parts.map((part, i) => 
+      part.toLowerCase() === query.toLowerCase() 
+        ? <mark key={i} className="search-highlight">{part}</mark>
+        : part
+    );
+  };
+
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString('ko-KR', { 
@@ -418,15 +449,30 @@ function ChatRoom({ user, onLogin, onLogout }) {
 
     useEffect(() => {
       const fetchPreview = async () => {
-        // 1. 로컬 캐시 확인
-        const cacheKey = `link_preview_${btoa(url).slice(0, 50)}`;
+        // 1. 로컬 캐시 확인 - URL 전체를 해시로 사용
+        const hashCode = (str) => {
+          let hash = 0;
+          for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+          }
+          return Math.abs(hash).toString(36);
+        };
+        const cacheKey = `link_preview_${hashCode(url)}`;
         const cached = localStorage.getItem(cacheKey);
         
         if (cached) {
           try {
-            setPreview(JSON.parse(cached));
-            setLoading(false);
-            return;
+            const cachedData = JSON.parse(cached);
+            // URL이 정확히 일치하는지 확인
+            if (cachedData.url === url) {
+              setPreview(cachedData);
+              setLoading(false);
+              return;
+            } else {
+              localStorage.removeItem(cacheKey);
+            }
           } catch (e) {
             localStorage.removeItem(cacheKey);
           }
@@ -438,7 +484,7 @@ function ChatRoom({ user, onLogin, onLogout }) {
           const data = response.data;
           setPreview(data);
           
-          // 3. 로컬 캐시에 저장 (7일)
+          // 3. 로컬 캐시에 저장
           localStorage.setItem(cacheKey, JSON.stringify(data));
         } catch (error) {
           console.error('미리보기 로딩 실패:', error);
@@ -508,7 +554,7 @@ function ChatRoom({ user, onLogin, onLogout }) {
     return <LinkPreviewCard url={url} />;
   };
 
-  const renderMessage = (message) => {
+  const renderMessage = (message, query = '') => {
     if (message.message_type === 'image') {
       return (
         <div className="message-image">
@@ -558,7 +604,7 @@ function ChatRoom({ user, onLogin, onLogout }) {
       return (
         <>
           <div className="message-header">
-            <span className="sender-name">{message.user?.name}</span>
+            <span className="sender-name">{query ? highlightText(message.user?.name, query) : message.user?.name}</span>
             <span className={`role-badge ${getUserRoleBadge(message.user?.role).class}`}>
               {getUserRoleBadge(message.user?.role).text}
             </span>
@@ -582,7 +628,7 @@ function ChatRoom({ user, onLogin, onLogout }) {
                   </a>
                 );
               }
-              return <span key={i}>{part}</span>;
+              return <span key={i}>{query ? highlightText(part, query) : part}</span>;
             })}
           </div>
           {urls.length > 0 && (
@@ -613,6 +659,9 @@ function ChatRoom({ user, onLogin, onLogout }) {
           )}
         </div>
         <div className="header-actions">
+          <button className="search-toggle-btn" onClick={toggleSearchMode} title="검색">
+            🔍
+          </button>
           {user ? (
             <>
               <span className="user-name">{user.name}</span>
@@ -625,6 +674,24 @@ function ChatRoom({ user, onLogin, onLogout }) {
           )}
         </div>
       </header>
+
+      {/* 검색 바 */}
+      {searchMode && (
+        <div className="search-bar">
+          <input
+            ref={searchInputRef}
+            type="text"
+            placeholder="메시지 검색..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="search-input"
+          />
+          <span className="search-count">
+            {searchQuery.trim() ? `${filteredMessages.length}개 결과` : ''}
+          </span>
+          <button className="search-close-btn" onClick={toggleSearchMode}>✕</button>
+        </div>
+      )}
 
       <div className="messages-container" ref={messagesContainerRef}>
         {/* 면책조항 슬라이드 (로그인 안 한 경우) */}
@@ -650,25 +717,31 @@ function ChatRoom({ user, onLogin, onLogout }) {
           </div>
         )}
         
+        {/* 검색 결과 안내 */}
+        {searchQuery.trim() && (
+          <div className="search-info">
+            🔍 "{searchQuery}" 검색 결과: {filteredMessages.length}개
+          </div>
+        )}
+        
         {/* 더보기 버튼 */}
-        {messages.length > 0 && messages.length >= 30 && (
+        {!searchQuery.trim() && messages.length > 0 && messages.length >= 30 && (
           <div className="load-more-container">
             <button 
               className="load-more-button"
               onClick={() => {
                 alert('이전 메시지는 스크롤하여 확인하세요!');
               }}
-              disabled={loadingMore}
             >
-              {loadingMore ? '로딩 중...' : `📜 최근 ${messages.length}개 메시지 표시 중`}
+              📜 최근 {messages.length}개 메시지 표시 중
             </button>
           </div>
         )}
         
-        {messages.map((message, index) => (
+        {filteredMessages.map((message, index) => (
           <div 
             key={message.id || index} 
-            className={`message ${message.message_type} ${user && message.user_id === user.id ? 'own' : ''}`}
+            className={`message ${message.message_type} ${user && message.user_id === user.id ? 'own' : ''} ${searchQuery.trim() ? 'search-result' : ''}`}
           >
             {message.message_type === 'system' ? (
               <div className="system-message">{message.content}</div>
@@ -679,7 +752,7 @@ function ChatRoom({ user, onLogin, onLogout }) {
                 <div className="message-time">{formatTime(message.created_at)}</div>
               </div>
             ) : (
-              renderMessage(message)
+              renderMessage(message, searchQuery)
             )}
           </div>
         ))}
