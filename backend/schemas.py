@@ -129,12 +129,20 @@ class NewsResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# ==================== Reply Schemas ====================
+# ==================== Thread Schemas ====================
 
-class ReplyCreate(BaseModel):
+class ThreadCreate(BaseModel):
+    title: str
     content: str
+    is_pinned: bool = False
 
-class ReplyUserResponse(BaseModel):
+class ThreadUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    is_pinned: Optional[bool] = None
+    is_active: Optional[bool] = None
+
+class ThreadAuthorResponse(BaseModel):
     id: int
     name: str
     role: str
@@ -142,13 +150,40 @@ class ReplyUserResponse(BaseModel):
     class Config:
         from_attributes = True
 
-class ReplyResponse(BaseModel):
+class ThreadCommentCreate(BaseModel):
+    content: str
+
+class ThreadCommentUserResponse(BaseModel):
     id: int
-    message_id: int
+    name: str
+    role: str
+    
+    class Config:
+        from_attributes = True
+
+class ThreadCommentResponse(BaseModel):
+    id: int
+    thread_id: int
     user_id: int
     content: str
     created_at: datetime
-    user: Optional[ReplyUserResponse] = None
+    user: Optional[ThreadCommentUserResponse] = None
+    
+    class Config:
+        from_attributes = True
+
+class ThreadResponse(BaseModel):
+    id: int
+    title: str
+    content: str
+    author_id: int
+    is_pinned: bool
+    is_active: bool
+    view_count: int
+    created_at: datetime
+    updated_at: datetime
+    author: Optional[ThreadAuthorResponse] = None
+    comment_count: Optional[int] = 0
     
     class Config:
         from_attributes = True

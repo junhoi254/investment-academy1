@@ -11,10 +11,8 @@ function AdminPanel({ user, onLogout }) {
   const [users, setUsers] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState([]);
+  const [threads, setThreads] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [settings, setSettings] = useState({
-    replies_enabled: false
-  });
   
   // 직원 생성 폼
   const [staffForm, setStaffForm] = useState({
@@ -31,6 +29,14 @@ function AdminPanel({ user, onLogout }) {
     description: ''
   });
 
+  // 쓰레드 생성 폼
+  const [threadForm, setThreadForm] = useState({
+    title: '',
+    content: '',
+    is_pinned: false
+  });
+  const [editingThread, setEditingThread] = useState(null);
+
   useEffect(() => {
     if (activeTab === 'users') {
       loadUsers();
@@ -41,35 +47,97 @@ function AdminPanel({ user, onLogout }) {
       // 5초마다 자동 새로고침
       const interval = setInterval(loadOnlineUsers, 5000);
       return () => clearInterval(interval);
-    } else if (activeTab === 'settings') {
-      loadSettings();
+    } else if (activeTab === 'threads') {
+      loadThreads();
     }
   }, [activeTab]);
 
-  const loadSettings = async () => {
+  const loadThreads = async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/admin/settings`, {
+      const response = await axios.get(`${API_URL}/api/threads`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setSettings({
-        replies_enabled: response.data.replies_enabled === 'true'
-      });
+      setThreads(response.data);
     } catch (error) {
-      console.error('설정 로딩 실패:', error);
+      console.error('쓰레드 로딩 실패:', error);
+    }
+    setLoading(false);
+  };
+
+  const createThread = async (e) => {
+    e.preventDefault();
+    if (!threadForm.title.trim() || !threadForm.content.trim()) {
+      alert('제목과 내용을 입력해주세요.');
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API_URL}/api/admin/threads`, threadForm, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setThreadForm({ title: '', content: '', is_pinned: false });
+      loadThreads();
+      alert('쓰레드가 생성되었습니다!');
+    } catch (error) {
+      alert('쓰레드 생성에 실패했습니다.');
     }
   };
 
-  const updateSetting = async (key, value) => {
+  const updateThread = async (threadId) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`${API_URL}/api/admin/settings/${key}?value=${value}`, {}, {
+      await axios.put(`${API_URL}/api/admin/threads/${threadId}`, editingThread, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setSettings(prev => ({ ...prev, [key]: value === 'true' }));
+      setEditingThread(null);
+      loadThreads();
+      alert('쓰레드가 수정되었습니다!');
     } catch (error) {
-      console.error('설정 변경 실패:', error);
-      alert('설정 변경에 실패했습니다.');
+      alert('쓰레드 수정에 실패했습니다.');
+    }
+  };
+
+  const deleteThread = async (threadId) => {
+    if (!window.confirm('정말 삭제하시겠습니까? 모든 댓글도 함께 삭제됩니다.')) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_URL}/api/admin/threads/${threadId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      loadThreads();
+      alert('쓰레드가 삭제되었습니다!');
+    } catch (error) {
+      alert('쓰레드 삭제에 실패했습니다.');
+    }
+  };
+
+  const toggleThreadPin = async (thread) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API_URL}/api/admin/threads/${thread.id}`, 
+        { is_pinned: !thread.is_pinned },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      loadThreads();
+    } catch (error) {
+      alert('상태 변경에 실패했습니다.');
+    }
+  };
+
+  const toggleThreadActive = async (thread) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API_URL}/api/admin/threads/${thread.id}`, 
+        { is_active: !thread.is_active },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      loadThreads();
+    } catch (error) {
+      alert('상태 변경에 실패했습니다.');
     }
   };
 
@@ -272,10 +340,10 @@ function AdminPanel({ user, onLogout }) {
           채팅방 관리
         </button>
         <button 
-          className={activeTab === 'settings' ? 'active' : ''}
-          onClick={() => setActiveTab('settings')}
+          className={activeTab === 'threads' ? 'active' : ''}
+          onClick={() => setActiveTab('threads')}
         >
-          ⚙️ 설정
+          📋 쓰레드 관리
         </button>
       </div>
 
@@ -530,26 +598,118 @@ function AdminPanel({ user, onLogout }) {
           </div>
         )}
 
-        {/* 설정 */}
-        {activeTab === 'settings' && (
-          <div className="settings-section">
-            <h2>⚙️ 시스템 설정</h2>
+        {/* 쓰레드 관리 */}
+        {activeTab === 'threads' && (
+          <div className="threads-section">
+            <h2>📋 쓰레드(게시판) 관리</h2>
             
-            <div className="settings-list">
-              <div className="setting-item">
-                <div className="setting-info">
-                  <h3>💬 댓글(쓰레드) 기능</h3>
-                  <p>회원들이 관리자 게시글에 댓글을 달 수 있습니다.</p>
+            {/* 쓰레드 생성 폼 */}
+            <div className="thread-form-container">
+              <h3>새 쓰레드 작성</h3>
+              <form onSubmit={createThread} className="thread-form">
+                <input
+                  type="text"
+                  placeholder="제목"
+                  value={threadForm.title}
+                  onChange={(e) => setThreadForm({...threadForm, title: e.target.value})}
+                  className="thread-title-input"
+                />
+                <textarea
+                  placeholder="내용을 입력하세요..."
+                  value={threadForm.content}
+                  onChange={(e) => setThreadForm({...threadForm, content: e.target.value})}
+                  className="thread-content-input"
+                  rows={5}
+                />
+                <div className="thread-options">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={threadForm.is_pinned}
+                      onChange={(e) => setThreadForm({...threadForm, is_pinned: e.target.checked})}
+                    />
+                    📌 상단 고정
+                  </label>
+                  <button type="submit" className="create-thread-btn">쓰레드 작성</button>
                 </div>
-                <label className="toggle-switch">
-                  <input 
-                    type="checkbox" 
-                    checked={settings.replies_enabled}
-                    onChange={(e) => updateSetting('replies_enabled', e.target.checked ? 'true' : 'false')}
-                  />
-                  <span className="toggle-slider"></span>
-                </label>
-              </div>
+              </form>
+            </div>
+
+            {/* 쓰레드 목록 */}
+            <div className="thread-list-container">
+              <h3>쓰레드 목록 ({threads.length}개)</h3>
+              {loading ? (
+                <p>로딩 중...</p>
+              ) : threads.length === 0 ? (
+                <p className="no-threads">작성된 쓰레드가 없습니다.</p>
+              ) : (
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>상태</th>
+                      <th>제목</th>
+                      <th>댓글</th>
+                      <th>조회</th>
+                      <th>작성일</th>
+                      <th>관리</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {threads.map(thread => (
+                      <tr key={thread.id} className={!thread.is_active ? 'inactive-row' : ''}>
+                        <td>
+                          {thread.is_pinned && <span className="pin-badge">📌</span>}
+                          {thread.is_active ? (
+                            <span className="status-badge active">활성</span>
+                          ) : (
+                            <span className="status-badge inactive">비활성</span>
+                          )}
+                        </td>
+                        <td className="thread-title-cell">
+                          {editingThread?.id === thread.id ? (
+                            <input
+                              type="text"
+                              value={editingThread.title}
+                              onChange={(e) => setEditingThread({...editingThread, title: e.target.value})}
+                              className="edit-input"
+                            />
+                          ) : (
+                            thread.title
+                          )}
+                        </td>
+                        <td>{thread.comment_count}</td>
+                        <td>{thread.view_count}</td>
+                        <td>{new Date(thread.created_at).toLocaleDateString('ko-KR')}</td>
+                        <td className="action-cell">
+                          {editingThread?.id === thread.id ? (
+                            <>
+                              <button className="save-btn" onClick={() => updateThread(thread.id)}>저장</button>
+                              <button className="cancel-btn" onClick={() => setEditingThread(null)}>취소</button>
+                            </>
+                          ) : (
+                            <>
+                              <button className="edit-btn" onClick={() => setEditingThread({...thread})}>수정</button>
+                              <button 
+                                className="pin-btn" 
+                                onClick={() => toggleThreadPin(thread)}
+                              >
+                                {thread.is_pinned ? '고정해제' : '고정'}
+                              </button>
+                              <button 
+                                className="toggle-btn" 
+                                onClick={() => toggleThreadActive(thread)}
+                              >
+                                {thread.is_active ? '비활성화' : '활성화'}
+                              </button>
+                              <button className="delete-btn" onClick={() => deleteThread(thread.id)}>삭제</button>
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         )}

@@ -514,9 +514,9 @@ async def get_link_preview(url: str, db: Session = Depends(get_db)):
     import aiohttp
     from bs4 import BeautifulSoup
     
-    # 1. 캐시 확인
+    # 1. 캐시 확인 (빈 캐시는 무시)
     cached = db.query(models.LinkPreviewCache).filter(models.LinkPreviewCache.url == url).first()
-    if cached:
+    if cached and cached.title:  # title이 있는 경우에만 캐시 사용
         return {
             "url": url,
             "title": cached.title or "",
@@ -524,15 +524,26 @@ async def get_link_preview(url: str, db: Session = Depends(get_db)):
             "image": cached.image or ""
         }
     
+    # 빈 캐시가 있으면 삭제
+    if cached and not cached.title:
+        db.delete(cached)
+        db.commit()
+    
     # 2. 캐시 없으면 크롤링
     try:
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive',
         }
         
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers=headers, timeout=5) as response:
+        timeout = aiohttp.ClientTimeout(total=10)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get(url, headers=headers, allow_redirects=True, ssl=False) as response:
                 if response.status != 200:
+                    print(f"Link preview failed: {url} - status {response.status}")
                     return {"url": url, "title": "", "description": "", "image": ""}
                 
                 html = await response.text()
@@ -548,15 +559,16 @@ async def get_link_preview(url: str, db: Session = Depends(get_db)):
                 description = og_desc['content'] if og_desc else ""
                 image = og_image['content'] if og_image else ""
                 
-                # 3. 캐시에 저장
-                new_cache = models.LinkPreviewCache(
-                    url=url,
-                    title=title[:255] if title else "",
-                    description=description[:500] if description else "",
-                    image=image[:500] if image else ""
-                )
-                db.add(new_cache)
-                db.commit()
+                # title이 있을 때만 캐시에 저장
+                if title:
+                    new_cache = models.LinkPreviewCache(
+                        url=url,
+                        title=title[:255] if title else "",
+                        description=description[:500] if description else "",
+                        image=image[:500] if image else ""
+                    )
+                    db.add(new_cache)
+                    db.commit()
                 
                 return {
                     "url": url,
@@ -565,8 +577,19 @@ async def get_link_preview(url: str, db: Session = Depends(get_db)):
                     "image": image
                 }
     except Exception as e:
-        print(f"Link preview error: {e}")
+        print(f"Link preview error for {url}: {e}")
         return {"url": url, "title": "", "description": "", "image": ""}
+
+@app.delete("/api/admin/link-preview-cache")
+async def clear_link_preview_cache(
+    admin: models.User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """링크 미리보기 캐시 전체 삭제 (관리자 전용)"""
+    count = db.query(models.LinkPreviewCache).count()
+    db.query(models.LinkPreviewCache).delete()
+    db.commit()
+    return {"message": f"링크 미리보기 캐시 {count}개가 삭제되었습니다"}
 
 # ==================== 뉴스 API ====================
 
@@ -579,74 +602,221 @@ async def get_news(category: str, current_user: models.User = Depends(get_curren
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ==================== 댓글(쓰레드) API ====================
+# ==================== 쓰레드(게시판) API ====================
 
-@app.get("/api/messages/{message_id}/replies", response_model=List[schemas.ReplyResponse])
-async def get_replies(message_id: int, db: Session = Depends(get_db)):
-    """메시지의 댓글 목록 조회"""
+@app.get("/api/threads", response_model=List[schemas.ThreadResponse])
+async def get_threads(db: Session = Depends(get_db)):
+    """쓰레드 목록 조회 (활성화된 것만, 고정글 우선)"""
+    from sqlalchemy.orm import joinedload
+    from sqlalchemy import func
+    
+    threads = db.query(models.Thread).options(
+        joinedload(models.Thread.author)
+    ).filter(
+        models.Thread.is_active == True
+    ).order_by(
+        models.Thread.is_pinned.desc(),
+        models.Thread.created_at.desc()
+    ).all()
+    
+    # 댓글 수 추가
+    result = []
+    for thread in threads:
+        comment_count = db.query(func.count(models.ThreadComment.id)).filter(
+            models.ThreadComment.thread_id == thread.id
+        ).scalar()
+        
+        thread_dict = {
+            "id": thread.id,
+            "title": thread.title,
+            "content": thread.content,
+            "author_id": thread.author_id,
+            "is_pinned": thread.is_pinned,
+            "is_active": thread.is_active,
+            "view_count": thread.view_count,
+            "created_at": thread.created_at,
+            "updated_at": thread.updated_at,
+            "author": thread.author,
+            "comment_count": comment_count
+        }
+        result.append(thread_dict)
+    
+    return result
+
+@app.get("/api/threads/{thread_id}", response_model=schemas.ThreadResponse)
+async def get_thread(thread_id: int, db: Session = Depends(get_db)):
+    """쓰레드 상세 조회 (조회수 증가)"""
+    from sqlalchemy.orm import joinedload
+    from sqlalchemy import func
+    
+    thread = db.query(models.Thread).options(
+        joinedload(models.Thread.author)
+    ).filter(models.Thread.id == thread_id).first()
+    
+    if not thread:
+        raise HTTPException(status_code=404, detail="쓰레드를 찾을 수 없습니다")
+    
+    # 조회수 증가
+    thread.view_count += 1
+    db.commit()
+    
+    # 댓글 수
+    comment_count = db.query(func.count(models.ThreadComment.id)).filter(
+        models.ThreadComment.thread_id == thread.id
+    ).scalar()
+    
+    return {
+        "id": thread.id,
+        "title": thread.title,
+        "content": thread.content,
+        "author_id": thread.author_id,
+        "is_pinned": thread.is_pinned,
+        "is_active": thread.is_active,
+        "view_count": thread.view_count,
+        "created_at": thread.created_at,
+        "updated_at": thread.updated_at,
+        "author": thread.author,
+        "comment_count": comment_count
+    }
+
+@app.post("/api/admin/threads", response_model=schemas.ThreadResponse)
+async def create_thread(
+    thread_data: schemas.ThreadCreate,
+    admin: models.User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """쓰레드 생성 (관리자 전용)"""
+    new_thread = models.Thread(
+        title=thread_data.title,
+        content=thread_data.content,
+        author_id=admin.id,
+        is_pinned=thread_data.is_pinned
+    )
+    db.add(new_thread)
+    db.commit()
+    db.refresh(new_thread)
+    
+    new_thread.author = admin
+    return {
+        "id": new_thread.id,
+        "title": new_thread.title,
+        "content": new_thread.content,
+        "author_id": new_thread.author_id,
+        "is_pinned": new_thread.is_pinned,
+        "is_active": new_thread.is_active,
+        "view_count": new_thread.view_count,
+        "created_at": new_thread.created_at,
+        "updated_at": new_thread.updated_at,
+        "author": new_thread.author,
+        "comment_count": 0
+    }
+
+@app.put("/api/admin/threads/{thread_id}", response_model=schemas.ThreadResponse)
+async def update_thread(
+    thread_id: int,
+    thread_data: schemas.ThreadUpdate,
+    admin: models.User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """쓰레드 수정 (관리자 전용)"""
+    thread = db.query(models.Thread).filter(models.Thread.id == thread_id).first()
+    if not thread:
+        raise HTTPException(status_code=404, detail="쓰레드를 찾을 수 없습니다")
+    
+    if thread_data.title is not None:
+        thread.title = thread_data.title
+    if thread_data.content is not None:
+        thread.content = thread_data.content
+    if thread_data.is_pinned is not None:
+        thread.is_pinned = thread_data.is_pinned
+    if thread_data.is_active is not None:
+        thread.is_active = thread_data.is_active
+    
+    db.commit()
+    db.refresh(thread)
+    
+    return thread
+
+@app.delete("/api/admin/threads/{thread_id}")
+async def delete_thread(
+    thread_id: int,
+    admin: models.User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """쓰레드 삭제 (관리자 전용)"""
+    thread = db.query(models.Thread).filter(models.Thread.id == thread_id).first()
+    if not thread:
+        raise HTTPException(status_code=404, detail="쓰레드를 찾을 수 없습니다")
+    
+    db.delete(thread)
+    db.commit()
+    
+    return {"message": "쓰레드가 삭제되었습니다"}
+
+# ==================== 쓰레드 댓글 API ====================
+
+@app.get("/api/threads/{thread_id}/comments", response_model=List[schemas.ThreadCommentResponse])
+async def get_thread_comments(thread_id: int, db: Session = Depends(get_db)):
+    """쓰레드 댓글 목록 조회"""
     from sqlalchemy.orm import joinedload
     
-    replies = db.query(models.Reply).options(
-        joinedload(models.Reply.user)
+    comments = db.query(models.ThreadComment).options(
+        joinedload(models.ThreadComment.user)
     ).filter(
-        models.Reply.message_id == message_id
-    ).order_by(models.Reply.created_at.asc()).all()
+        models.ThreadComment.thread_id == thread_id
+    ).order_by(models.ThreadComment.created_at.asc()).all()
     
-    return replies
+    return comments
 
-@app.post("/api/messages/{message_id}/replies", response_model=schemas.ReplyResponse)
-async def create_reply(
-    message_id: int, 
-    reply_data: schemas.ReplyCreate,
+@app.post("/api/threads/{thread_id}/comments", response_model=schemas.ThreadCommentResponse)
+async def create_thread_comment(
+    thread_id: int,
+    comment_data: schemas.ThreadCommentCreate,
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """댓글 작성 (승인된 회원만)"""
-    # 댓글 기능 활성화 여부 확인
-    setting = db.query(models.Settings).filter(models.Settings.key == "replies_enabled").first()
-    if not setting or setting.value != "true":
-        raise HTTPException(status_code=403, detail="댓글 기능이 비활성화되어 있습니다")
-    
+    """쓰레드 댓글 작성 (승인된 회원만)"""
     # 승인된 사용자인지 확인
     if not current_user.is_approved:
         raise HTTPException(status_code=403, detail="승인된 회원만 댓글을 작성할 수 있습니다")
     
-    # 메시지 존재 여부 확인
-    message = db.query(models.Message).filter(models.Message.id == message_id).first()
-    if not message:
-        raise HTTPException(status_code=404, detail="메시지를 찾을 수 없습니다")
+    # 쓰레드 존재 여부 확인
+    thread = db.query(models.Thread).filter(models.Thread.id == thread_id).first()
+    if not thread:
+        raise HTTPException(status_code=404, detail="쓰레드를 찾을 수 없습니다")
+    
+    if not thread.is_active:
+        raise HTTPException(status_code=403, detail="비활성화된 쓰레드입니다")
     
     # 댓글 생성
-    new_reply = models.Reply(
-        message_id=message_id,
+    new_comment = models.ThreadComment(
+        thread_id=thread_id,
         user_id=current_user.id,
-        content=reply_data.content
+        content=comment_data.content
     )
-    db.add(new_reply)
+    db.add(new_comment)
     db.commit()
-    db.refresh(new_reply)
+    db.refresh(new_comment)
     
-    # user 정보 로드
-    new_reply.user = current_user
-    
-    return new_reply
+    new_comment.user = current_user
+    return new_comment
 
-@app.delete("/api/replies/{reply_id}")
-async def delete_reply(
-    reply_id: int,
+@app.delete("/api/threads/comments/{comment_id}")
+async def delete_thread_comment(
+    comment_id: int,
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """댓글 삭제 (본인 또는 관리자)"""
-    reply = db.query(models.Reply).filter(models.Reply.id == reply_id).first()
-    if not reply:
+    """쓰레드 댓글 삭제 (본인 또는 관리자)"""
+    comment = db.query(models.ThreadComment).filter(models.ThreadComment.id == comment_id).first()
+    if not comment:
         raise HTTPException(status_code=404, detail="댓글을 찾을 수 없습니다")
     
     # 본인 또는 관리자만 삭제 가능
-    if reply.user_id != current_user.id and current_user.role not in ["admin", "staff"]:
+    if comment.user_id != current_user.id and current_user.role not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="삭제 권한이 없습니다")
     
-    db.delete(reply)
+    db.delete(comment)
     db.commit()
     
     return {"message": "댓글이 삭제되었습니다"}
@@ -689,6 +859,10 @@ async def get_all_settings(admin: models.User = Depends(get_admin_user), db: Ses
 
 @app.on_event("startup")
 async def startup_event():
+    # 테이블 자동 생성 (새 테이블 추가 시 자동 반영)
+    from database import engine, Base
+    Base.metadata.create_all(bind=engine)
+    
     db = SessionLocal()
     try:
         # 관리자 계정 생성

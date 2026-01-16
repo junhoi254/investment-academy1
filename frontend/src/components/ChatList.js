@@ -9,11 +9,13 @@ function ChatList({ user, onLogout }) {
   const navigate = useNavigate();
   const [freeRooms, setFreeRooms] = useState([]);
   const [paidRooms, setPaidRooms] = useState([]);
+  const [threads, setThreads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showLogin, setShowLogin] = useState(false);
 
   useEffect(() => {
     loadFreeRooms();
+    loadThreads();
     if (user) {
       loadPaidRooms();
     }
@@ -44,12 +46,25 @@ function ChatList({ user, onLogout }) {
     }
   };
 
+  const loadThreads = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/threads`);
+      setThreads(response.data);
+    } catch (error) {
+      console.error('쓰레드 로딩 실패:', error);
+    }
+  };
+
   const handleRoomClick = (roomId, isFree) => {
     if (!isFree && !user) {
       setShowLogin(true);
       return;
     }
     navigate(`/chat/${roomId}`);
+  };
+
+  const handleThreadClick = (threadId) => {
+    navigate(`/thread/${threadId}`);
   };
 
   const getRoomIcon = (roomType) => {
@@ -140,6 +155,43 @@ function ChatList({ user, onLogout }) {
             ))}
           </div>
         </section>
+
+        {/* 쓰레드 (게시판) */}
+        {threads.length > 0 && (
+          <section className="room-section thread-section">
+            <h2>📋 공지 & 게시판</h2>
+            <p className="section-description">중요 공지사항 및 정보 (회원은 댓글 작성 가능)</p>
+            <div className="thread-list">
+              {threads.map(thread => (
+                <div 
+                  key={thread.id} 
+                  className={`thread-card ${thread.is_pinned ? 'pinned' : ''}`}
+                  onClick={() => handleThreadClick(thread.id)}
+                >
+                  <div className="thread-icon">
+                    {thread.is_pinned ? '📌' : '📄'}
+                  </div>
+                  <div className="thread-info">
+                    <h3>
+                      {thread.is_pinned && <span className="pin-label">[고정]</span>}
+                      {thread.title}
+                    </h3>
+                    <p className="thread-meta">
+                      <span className="thread-author">{thread.author?.name}</span>
+                      <span className="thread-date">
+                        {new Date(thread.created_at).toLocaleDateString('ko-KR')}
+                      </span>
+                    </p>
+                  </div>
+                  <div className="thread-stats">
+                    <span className="comment-count">💬 {thread.comment_count}</span>
+                    <span className="view-count">👁 {thread.view_count}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* 유료 채팅방 */}
         {user && (

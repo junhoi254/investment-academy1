@@ -209,3 +209,111 @@
   background: #ccc;
   color: #333;
 }
+
+/* 쓰레드(게시판) 스타일 */
+.thread-section {
+  margin-bottom: 30px;
+}
+
+.thread-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.thread-card {
+  background: white;
+  padding: 16px 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.thread-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+}
+
+.thread-card.pinned {
+  background: linear-gradient(135deg, #fff9e6 0%, #fff5d6 100%);
+  border-left: 4px solid #ffc107;
+}
+
+.thread-icon {
+  font-size: 28px;
+  width: 40px;
+  text-align: center;
+}
+
+.thread-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.thread-info h3 {
+  color: #333;
+  font-size: 15px;
+  margin-bottom: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pin-label {
+  color: #ffc107;
+  margin-right: 5px;
+}
+
+.thread-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: #888;
+}
+
+.thread-author {
+  color: #667eea;
+  font-weight: 500;
+}
+
+.thread-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  font-size: 12px;
+  color: #888;
+}
+
+.comment-count {
+  color: #667eea;
+}
+
+.view-count {
+  color: #888;
+}
+
+/* 모바일 쓰레드 스타일 */
+@media (max-width: 768px) {
+  .thread-card {
+    padding: 12px 15px;
+  }
+  
+  .thread-icon {
+    font-size: 24px;
+    width: 30px;
+  }
+  
+  .thread-info h3 {
+    font-size: 14px;
+  }
+  
+  .thread-stats {
+    flex-direction: row;
+    gap: 10px;
+  }
+}

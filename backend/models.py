@@ -86,17 +86,34 @@ class LinkPreviewCache(Base):
     image = Column(String(500), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-class Reply(Base):
-    """메시지에 대한 댓글(쓰레드)"""
-    __tablename__ = "replies"
+class Thread(Base):
+    """쓰레드 게시글 (관리자 작성)"""
+    __tablename__ = "threads"
     
     id = Column(Integer, primary_key=True, index=True)
-    message_id = Column(Integer, ForeignKey("messages.id"), nullable=False)
+    title = Column(String(255), nullable=False)
+    content = Column(Text, nullable=False)
+    author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    is_pinned = Column(Boolean, default=False)  # 상단 고정
+    is_active = Column(Boolean, default=True)   # 활성화 여부
+    view_count = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    author = relationship("User", backref="threads")
+    comments = relationship("ThreadComment", back_populates="thread", cascade="all, delete-orphan")
+
+class ThreadComment(Base):
+    """쓰레드 댓글 (회원 작성)"""
+    __tablename__ = "thread_comments"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    thread_id = Column(Integer, ForeignKey("threads.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     content = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     
-    message = relationship("Message", backref="replies")
+    thread = relationship("Thread", back_populates="comments")
     user = relationship("User")
 
 class Settings(Base):
