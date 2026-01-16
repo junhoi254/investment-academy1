@@ -26,13 +26,14 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="투자학당 - Investment Academy")
 
-# CORS 설정
+# CORS 설정 - 모든 도메인 허용
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 프로덕션에서는 특정 도메인만 허용
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=["*"],
+    allow_credentials=False,  # credentials와 * 동시 사용 불가
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # 업로드된 파일 서빙
