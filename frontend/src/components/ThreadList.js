@@ -209,7 +209,7 @@ function ThreadList({ user }) {
     <div className="thread-list-container">
       <header className="thread-list-header">
         <button className="back-button" onClick={() => navigate('/chat')}>
-          ←
+          ← 뒤로
         </button>
         <h1>훈장님 한마디</h1>
         <div className="header-spacer"></div>

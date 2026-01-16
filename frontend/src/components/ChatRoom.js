@@ -612,7 +612,7 @@ function ChatRoom({ user, onLogin, onLogout }) {
     <div className="chatroom-container">
       <header className="chatroom-header">
         <button className="back-button" onClick={() => navigate('/chat')}>
-          ←
+          ← 뒤로
         </button>
         <div className="room-title">
           <h2>{room?.name || '채팅방'}</h2>
