@@ -28,9 +28,8 @@ function ChatRoom({ user, onLogin, onLogout }) {
   const navigate = useNavigate();
   const [room, setRoom] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [hasMoreMessages, setHasMoreMessages] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [newMessage, setNewMessage] = useState('');
+  // eslint-disable-next-line no-unused-vars
   const [ws, setWs] = useState(null);
   const [connected, setConnected] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -82,6 +81,7 @@ function ChatRoom({ user, onLogin, onLogout }) {
       }
       setConnected(false);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId]);
 
   // user 변경 시 WebSocket 연결/해제 - 별도 useEffect
@@ -103,6 +103,7 @@ function ChatRoom({ user, onLogin, onLogout }) {
       wsRef.current = null;
       setConnected(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, roomId]);
 
   useEffect(() => {
