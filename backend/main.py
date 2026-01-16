@@ -382,6 +382,28 @@ async def get_current_user_optional(token: Optional[str], db: Session):
     except:
         return None
 
+# ==================== 메시지 삭제 API ====================
+
+@app.delete("/api/messages/{message_id}")
+async def delete_message(
+    message_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """메시지 삭제 (관리자/서브관리자만 가능)"""
+    # 관리자 또는 서브관리자만 삭제 가능
+    if current_user.role not in ["admin", "subadmin"]:
+        raise HTTPException(status_code=403, detail="메시지 삭제 권한이 없습니다")
+    
+    message = db.query(models.Message).filter(models.Message.id == message_id).first()
+    if not message:
+        raise HTTPException(status_code=404, detail="메시지를 찾을 수 없습니다")
+    
+    db.delete(message)
+    db.commit()
+    
+    return {"message": "메시지가 삭제되었습니다", "deleted_id": message_id}
+
 # ==================== 파일 업로드 API ====================
 
 @app.post("/api/upload/image")

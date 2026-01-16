@@ -199,6 +199,28 @@ function ChatRoom({ user, onLogin, onLogout }) {
     setShowEmojiPicker(false);
   };
 
+  // 메시지 삭제 함수
+  const handleDeleteMessage = async (messageId) => {
+    if (!window.confirm('이 메시지를 삭제하시겠습니까?')) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_URL}/api/messages/${messageId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // 메시지 목록에서 제거
+      setMessages(prev => prev.filter(m => m.id !== messageId));
+    } catch (error) {
+      alert('메시지 삭제 실패: ' + (error.response?.data?.detail || error.message));
+    }
+  };
+
+  // 삭제 권한 확인 (관리자/서브관리자만)
+  const canDeleteMessage = () => {
+    return user && (user.role === 'admin' || user.role === 'subadmin');
+  };
+
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -362,6 +384,15 @@ function ChatRoom({ user, onLogin, onLogout }) {
     if (message.message_type === 'image') {
       return (
         <div className="message-image">
+          {canDeleteMessage() && (
+            <button 
+              className="delete-message-btn image-delete"
+              onClick={() => handleDeleteMessage(message.id)}
+              title="메시지 삭제"
+            >
+              🗑️
+            </button>
+          )}
           <img 
             src={`${API_URL}${message.file_url}`} 
             alt={message.file_name}
@@ -373,6 +404,15 @@ function ChatRoom({ user, onLogin, onLogout }) {
     } else if (message.message_type === 'file') {
       return (
         <div className="message-file">
+          {canDeleteMessage() && (
+            <button 
+              className="delete-message-btn file-delete"
+              onClick={() => handleDeleteMessage(message.id)}
+              title="메시지 삭제"
+            >
+              🗑️
+            </button>
+          )}
           <a 
             href={`${API_URL}${message.file_url}`} 
             download={message.file_name}
@@ -395,6 +435,15 @@ function ChatRoom({ user, onLogin, onLogout }) {
               {getUserRoleBadge(message.user?.role).text}
             </span>
             <span className="message-time">{formatTime(message.created_at)}</span>
+            {canDeleteMessage() && (
+              <button 
+                className="delete-message-btn"
+                onClick={() => handleDeleteMessage(message.id)}
+                title="메시지 삭제"
+              >
+                🗑️
+              </button>
+            )}
           </div>
           <div className="message-content">
             {text.split(/(https?:\/\/[^\s]+)/g).map((part, i) => {
