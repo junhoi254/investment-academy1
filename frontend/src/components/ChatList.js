@@ -149,22 +149,22 @@ function ChatList({ user, onLogout }) {
           </div>
         </section>
 
-        {/* 공지 게시판 - 승인된 회원만 */}
+        {/* 훈장님 한마디 - 승인된 회원만 */}
         {user && user.is_approved && (
           <section className="room-section">
-            <h2>📋 공지 게시판</h2>
+            <h2>💬 훈장님 한마디</h2>
             <p className="section-description">중요 공지사항 및 정보 (회원 댓글 작성 가능)</p>
             <div className="room-list">
               <div 
                 className="room-card notice-board"
                 onClick={handleThreadBoardClick}
               >
-                <div className="room-icon">📋</div>
+                <div className="room-icon">💬</div>
                 <div className="room-info">
-                  <h3>투자학당 공지</h3>
-                  <p>중요 공지사항 및 정보 게시판</p>
+                  <h3>훈장님 한마디</h3>
+                  <p>일타훈장님의 소중한 한마디</p>
                 </div>
-                <div className="room-badge notice">공지</div>
+                <div className="room-badge notice">NEW</div>
               </div>
             </div>
           </section>

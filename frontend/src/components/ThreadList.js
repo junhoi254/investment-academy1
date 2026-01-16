@@ -79,7 +79,7 @@ function ThreadList({ user }) {
         <button className="back-button" onClick={() => navigate('/chat')}>
           ← 뒤로
         </button>
-        <h1>📋 투자학당 공지</h1>
+        <h1>💬 훈장님 한마디</h1>
         <div className="header-spacer"></div>
       </header>
 

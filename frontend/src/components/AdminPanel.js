@@ -80,7 +80,7 @@ function AdminPanel({ user, onLogout }) {
       });
       setThreadForm({ title: '', content: '', is_pinned: false });
       loadThreads();
-      alert('쓰레드가 생성되었습니다!');
+      alert('한마디가 등록되었습니다!');
     } catch (error) {
       alert('쓰레드 생성에 실패했습니다.');
     }
@@ -94,7 +94,7 @@ function AdminPanel({ user, onLogout }) {
       });
       setEditingThread(null);
       loadThreads();
-      alert('쓰레드가 수정되었습니다!');
+      alert('한마디가 수정되었습니다!');
     } catch (error) {
       alert('쓰레드 수정에 실패했습니다.');
     }
@@ -109,7 +109,7 @@ function AdminPanel({ user, onLogout }) {
         headers: { Authorization: `Bearer ${token}` }
       });
       loadThreads();
-      alert('쓰레드가 삭제되었습니다!');
+      alert('한마디가 삭제되었습니다!');
     } catch (error) {
       alert('쓰레드 삭제에 실패했습니다.');
     }
@@ -343,7 +343,7 @@ function AdminPanel({ user, onLogout }) {
           className={activeTab === 'threads' ? 'active' : ''}
           onClick={() => setActiveTab('threads')}
         >
-          📋 쓰레드 관리
+          💬 훈장님 한마디
         </button>
       </div>
 
@@ -601,11 +601,11 @@ function AdminPanel({ user, onLogout }) {
         {/* 쓰레드 관리 */}
         {activeTab === 'threads' && (
           <div className="threads-section">
-            <h2>📋 쓰레드(게시판) 관리</h2>
+            <h2>💬 훈장님 한마디 관리</h2>
             
             {/* 쓰레드 생성 폼 */}
             <div className="thread-form-container">
-              <h3>새 쓰레드 작성</h3>
+              <h3>새 한마디 작성</h3>
               <form onSubmit={createThread} className="thread-form">
                 <input
                   type="text"
@@ -630,18 +630,18 @@ function AdminPanel({ user, onLogout }) {
                     />
                     📌 상단 고정
                   </label>
-                  <button type="submit" className="create-thread-btn">쓰레드 작성</button>
+                  <button type="submit" className="create-thread-btn">한마디 등록</button>
                 </div>
               </form>
             </div>
 
-            {/* 쓰레드 목록 */}
+            {/* 한마디 목록 */}
             <div className="thread-list-container">
-              <h3>쓰레드 목록 ({threads.length}개)</h3>
+              <h3>한마디 목록 ({threads.length}개)</h3>
               {loading ? (
                 <p>로딩 중...</p>
               ) : threads.length === 0 ? (
-                <p className="no-threads">작성된 쓰레드가 없습니다.</p>
+                <p className="no-threads">작성된 한마디가 없습니다.</p>
               ) : (
                 <table className="admin-table">
                   <thead>
