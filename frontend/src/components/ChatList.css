@@ -317,3 +317,30 @@
     gap: 10px;
   }
 }
+
+/* 공지 게시판 카드 */
+.room-card.notice-board {
+  background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+  border-left: 4px solid #667eea;
+}
+
+.room-badge.notice {
+  background: #667eea;
+  color: white;
+}
+
+/* 공지 게시판 카드 스타일 */
+.room-card.notice-board {
+  background: linear-gradient(135deg, #fff9e6 0%, #fff5d6 100%);
+  border-left: 4px solid #ffc107;
+}
+
+.room-card.notice-board:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(255, 193, 7, 0.3);
+}
+
+.room-badge.notice {
+  background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+  color: white;
+}

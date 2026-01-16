@@ -4,19 +4,19 @@
 }
 
 .thread-header {
-  background: white;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
   padding: 15px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 0;
   z-index: 100;
 }
 
 .back-button {
-  background: #667eea;
+  background: rgba(255, 255, 255, 0.2);
   color: white;
   border: none;
   padding: 8px 16px;
@@ -28,14 +28,14 @@
 .thread-stats-header {
   display: flex;
   gap: 15px;
-  color: #666;
+  color: rgba(255, 255, 255, 0.9);
   font-size: 14px;
 }
 
 .thread-content {
   background: white;
-  margin: 20px;
-  padding: 30px;
+  margin: 15px;
+  padding: 25px;
   border-radius: 16px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
 }
@@ -57,8 +57,9 @@
 
 .thread-title-area h1 {
   color: #333;
-  font-size: 24px;
+  font-size: 22px;
   line-height: 1.4;
+  margin: 0;
 }
 
 .thread-meta {
@@ -67,7 +68,7 @@
   align-items: center;
   padding-bottom: 20px;
   border-bottom: 1px solid #eee;
-  margin-bottom: 25px;
+  margin-bottom: 20px;
 }
 
 .author-info {
@@ -110,54 +111,89 @@
 
 .thread-date {
   color: #888;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .thread-body {
   color: #333;
   line-height: 1.8;
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .thread-body p {
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+}
+
+/* 링크 스타일 */
+.content-link {
+  color: #667eea;
+  text-decoration: none;
+  word-break: break-all;
+  border-bottom: 1px solid #667eea;
+  transition: all 0.2s ease;
+}
+
+.content-link:hover {
+  color: #5568d3;
+  background: #f0f4ff;
+}
+
+/* 댓글 토글 버튼 */
+.comments-toggle-container {
+  padding: 0 15px;
+  margin-bottom: 15px;
+}
+
+.comments-toggle-btn {
+  width: 100%;
+  background: white;
+  border: 2px solid #667eea;
+  color: #667eea;
+  padding: 14px 20px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.comments-toggle-btn:hover {
+  background: #f0f4ff;
+}
+
+.comments-toggle-btn.active {
+  background: #667eea;
+  color: white;
 }
 
 /* 댓글 섹션 */
 .comments-section {
   background: white;
-  margin: 0 20px 20px;
-  padding: 25px 30px;
+  margin: 0 15px 15px;
+  padding: 20px;
   border-radius: 16px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-}
-
-.comments-section h2 {
-  color: #333;
-  font-size: 18px;
-  margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #eee;
 }
 
 .no-comments {
   text-align: center;
   color: #888;
-  padding: 40px 20px;
+  padding: 30px 20px;
   background: #f9f9f9;
   border-radius: 12px;
+  margin-bottom: 20px;
 }
 
 .comments-list {
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  margin-bottom: 25px;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
 .comment-item {
   background: #f9f9f9;
-  padding: 15px 20px;
+  padding: 15px 18px;
   border-radius: 12px;
 }
 
@@ -213,8 +249,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: 20px;
-  padding-top: 20px;
+  padding-top: 15px;
   border-top: 1px solid #eee;
 }
 
@@ -254,26 +289,6 @@
   cursor: not-allowed;
 }
 
-.comment-notice {
-  text-align: center;
-  padding: 20px;
-  background: #e8f4fd;
-  border-radius: 12px;
-  color: #0066cc;
-  margin-top: 20px;
-}
-
-.comment-notice.warning {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.comment-notice a {
-  color: #667eea;
-  font-weight: 600;
-  text-decoration: none;
-}
-
 .loading, .error {
   text-align: center;
   padding: 100px 20px;
@@ -284,12 +299,12 @@
 /* 모바일 스타일 */
 @media (max-width: 768px) {
   .thread-content {
-    margin: 15px;
+    margin: 10px;
     padding: 20px;
   }
   
   .thread-title-area h1 {
-    font-size: 20px;
+    font-size: 18px;
   }
   
   .thread-meta {
@@ -299,12 +314,16 @@
   }
   
   .thread-body {
-    font-size: 15px;
+    font-size: 14px;
+  }
+  
+  .comments-toggle-container {
+    padding: 0 10px;
   }
   
   .comments-section {
-    margin: 0 15px 15px;
-    padding: 20px;
+    margin: 0 10px 10px;
+    padding: 15px;
   }
   
   .comment-item {

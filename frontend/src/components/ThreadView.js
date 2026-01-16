@@ -13,11 +13,17 @@ function ThreadView({ user }) {
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [showComments, setShowComments] = useState(false);
 
   useEffect(() => {
+    // 승인된 회원만 접근 가능
+    if (!user || !user.is_approved) {
+      alert('승인된 회원만 이용할 수 있습니다.');
+      navigate('/chat');
+      return;
+    }
     loadThread();
-    loadComments();
-  }, [threadId]);
+  }, [threadId, user, navigate]);
 
   const loadThread = async () => {
     try {
@@ -25,8 +31,8 @@ function ThreadView({ user }) {
       setThread(response.data);
     } catch (error) {
       console.error('쓰레드 로딩 실패:', error);
-      alert('쓰레드를 찾을 수 없습니다.');
-      navigate('/chat');
+      alert('게시글을 찾을 수 없습니다.');
+      navigate('/threads');
     } finally {
       setLoading(false);
     }
@@ -41,14 +47,16 @@ function ThreadView({ user }) {
     }
   };
 
+  const toggleComments = () => {
+    if (!showComments) {
+      loadComments();
+    }
+    setShowComments(!showComments);
+  };
+
   const submitComment = async (e) => {
     e.preventDefault();
     if (!newComment.trim()) return;
-    if (!user) {
-      alert('로그인이 필요합니다.');
-      navigate('/login');
-      return;
-    }
     
     setSubmitting(true);
     try {
@@ -60,6 +68,11 @@ function ThreadView({ user }) {
       );
       setComments([...comments, response.data]);
       setNewComment('');
+      // 댓글 수 업데이트
+      setThread(prev => ({
+        ...prev,
+        comment_count: (prev.comment_count || 0) + 1
+      }));
     } catch (error) {
       alert(error.response?.data?.detail || '댓글 작성에 실패했습니다.');
     }
@@ -75,6 +88,11 @@ function ThreadView({ user }) {
         headers: { Authorization: `Bearer ${token}` }
       });
       setComments(comments.filter(c => c.id !== commentId));
+      // 댓글 수 업데이트
+      setThread(prev => ({
+        ...prev,
+        comment_count: Math.max((prev.comment_count || 1) - 1, 0)
+      }));
     } catch (error) {
       alert('댓글 삭제에 실패했습니다.');
     }
@@ -100,6 +118,43 @@ function ThreadView({ user }) {
     return badges[role] || { text: '회원', class: 'member' };
   };
 
+  // URL을 링크로 변환하는 함수
+  const renderContentWithLinks = (content) => {
+    if (!content) return null;
+    
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const lines = content.split('\n');
+    
+    return lines.map((line, lineIndex) => {
+      const parts = line.split(urlRegex);
+      
+      return (
+        <p key={lineIndex}>
+          {parts.map((part, partIndex) => {
+            if (urlRegex.test(part)) {
+              // URL 끝에 붙은 특수문자 제거
+              const cleanUrl = part.replace(/[.,!?;:]+$/, '');
+              return (
+                <a 
+                  key={partIndex}
+                  href={cleanUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="content-link"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {cleanUrl}
+                </a>
+              );
+            }
+            return part || null;
+          })}
+          {parts.length === 0 && <br />}
+        </p>
+      );
+    });
+  };
+
   if (loading) {
     return (
       <div className="thread-view-container">
@@ -111,7 +166,7 @@ function ThreadView({ user }) {
   if (!thread) {
     return (
       <div className="thread-view-container">
-        <div className="error">쓰레드를 찾을 수 없습니다.</div>
+        <div className="error">게시글을 찾을 수 없습니다.</div>
       </div>
     );
   }
@@ -119,12 +174,11 @@ function ThreadView({ user }) {
   return (
     <div className="thread-view-container">
       <header className="thread-header">
-        <button className="back-button" onClick={() => navigate('/chat')}>
-          ← 목록으로
+        <button className="back-button" onClick={() => navigate('/threads')}>
+          ← 목록
         </button>
         <div className="thread-stats-header">
           <span>👁 {thread.view_count}</span>
-          <span>💬 {comments.length}</span>
         </div>
       </header>
 
@@ -145,76 +199,73 @@ function ThreadView({ user }) {
         </div>
 
         <div className="thread-body">
-          {thread.content.split('\n').map((line, i) => (
-            <p key={i}>{line || <br />}</p>
-          ))}
+          {renderContentWithLinks(thread.content)}
         </div>
       </article>
 
-      <section className="comments-section">
-        <h2>💬 댓글 ({comments.length})</h2>
-        
-        {comments.length === 0 ? (
-          <div className="no-comments">
-            아직 댓글이 없습니다. 첫 댓글을 작성해보세요!
-          </div>
-        ) : (
-          <div className="comments-list">
-            {comments.map(comment => (
-              <div key={comment.id} className="comment-item">
-                <div className="comment-header">
-                  <div className="comment-author">
-                    <span className="author-name">{comment.user?.name}</span>
-                    <span className={`role-badge small ${getRoleBadge(comment.user?.role).class}`}>
-                      {getRoleBadge(comment.user?.role).text}
-                    </span>
-                  </div>
-                  <div className="comment-actions">
-                    <span className="comment-date">{formatDate(comment.created_at)}</span>
-                    {user && (user.id === comment.user_id || user.role === 'admin') && (
-                      <button 
-                        className="delete-comment-btn"
-                        onClick={() => deleteComment(comment.id)}
-                      >
-                        🗑️
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <div className="comment-content">
-                  {comment.content}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+      {/* 댓글 토글 버튼 */}
+      <div className="comments-toggle-container">
+        <button 
+          className={`comments-toggle-btn ${showComments ? 'active' : ''}`}
+          onClick={toggleComments}
+        >
+          💬 댓글 {thread.comment_count || 0}개 {showComments ? '접기 ▲' : '보기 ▼'}
+        </button>
+      </div>
 
-        {/* 댓글 작성 폼 */}
-        {user ? (
-          user.is_approved ? (
-            <form className="comment-form" onSubmit={submitComment}>
-              <textarea
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder="댓글을 입력하세요..."
-                rows={3}
-                disabled={submitting}
-              />
-              <button type="submit" disabled={submitting || !newComment.trim()}>
-                {submitting ? '등록 중...' : '댓글 등록'}
-              </button>
-            </form>
-          ) : (
-            <div className="comment-notice warning">
-              ⚠️ 승인된 회원만 댓글을 작성할 수 있습니다.
+      {/* 댓글 섹션 - 토글 시에만 표시 */}
+      {showComments && (
+        <section className="comments-section">
+          {comments.length === 0 ? (
+            <div className="no-comments">
+              아직 댓글이 없습니다. 첫 댓글을 작성해보세요!
             </div>
-          )
-        ) : (
-          <div className="comment-notice">
-            💡 댓글을 작성하려면 <a href="/login">로그인</a>이 필요합니다.
-          </div>
-        )}
-      </section>
+          ) : (
+            <div className="comments-list">
+              {comments.map(comment => (
+                <div key={comment.id} className="comment-item">
+                  <div className="comment-header">
+                    <div className="comment-author">
+                      <span className="author-name">{comment.user?.name}</span>
+                      <span className={`role-badge small ${getRoleBadge(comment.user?.role).class}`}>
+                        {getRoleBadge(comment.user?.role).text}
+                      </span>
+                    </div>
+                    <div className="comment-actions">
+                      <span className="comment-date">{formatDate(comment.created_at)}</span>
+                      {user && (user.id === comment.user_id || user.role === 'admin') && (
+                        <button 
+                          className="delete-comment-btn"
+                          onClick={() => deleteComment(comment.id)}
+                        >
+                          🗑️
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="comment-content">
+                    {comment.content}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* 댓글 작성 폼 */}
+          <form className="comment-form" onSubmit={submitComment}>
+            <textarea
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="댓글을 입력하세요..."
+              rows={3}
+              disabled={submitting}
+            />
+            <button type="submit" disabled={submitting || !newComment.trim()}>
+              {submitting ? '등록 중...' : '댓글 등록'}
+            </button>
+          </form>
+        </section>
+      )}
     </div>
   );
 }

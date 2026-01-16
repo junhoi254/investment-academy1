@@ -4,6 +4,7 @@ import Login from './components/Login';
 import Register from './components/Register';
 import ChatList from './components/ChatList';
 import ChatRoom from './components/ChatRoom';
+import ThreadList from './components/ThreadList';
 import ThreadView from './components/ThreadView';
 import AdminPanel from './components/AdminPanel';
 import './App.css';
@@ -63,7 +64,11 @@ function App() {
             element={<ChatRoom user={user} onLogin={handleLogin} onLogout={handleLogout} />} 
           />
           
-          {/* 쓰레드 라우트 */}
+          {/* 쓰레드(공지게시판) 라우트 */}
+          <Route 
+            path="/threads" 
+            element={<ThreadList user={user} />} 
+          />
           <Route 
             path="/thread/:threadId" 
             element={<ThreadView user={user} />} 
