@@ -311,6 +311,8 @@ async def get_room_messages(
     current_user: Optional[models.User] = Depends(get_current_user_optional)
 ):
     """채팅방 메시지 조회"""
+    from sqlalchemy.orm import joinedload
+    
     room = db.query(models.Room).filter(models.Room.id == room_id).first()
     if not room:
         raise HTTPException(status_code=404, detail="채팅방을 찾을 수 없습니다")
@@ -319,7 +321,10 @@ async def get_room_messages(
     if not room.is_free and not current_user:
         raise HTTPException(status_code=401, detail="로그인이 필요합니다")
     
-    messages = db.query(models.Message).filter(
+    # user 정보를 함께 로드
+    messages = db.query(models.Message).options(
+        joinedload(models.Message.user)
+    ).filter(
         models.Message.room_id == room_id
     ).order_by(models.Message.created_at.desc()).limit(50).all()
     

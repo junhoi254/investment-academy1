@@ -75,6 +75,14 @@ class RoomResponse(BaseModel):
 
 # ==================== Message Schemas ====================
 
+class MessageUserResponse(BaseModel):
+    id: int
+    name: str
+    role: str
+    
+    class Config:
+        from_attributes = True
+
 class MessageCreate(BaseModel):
     content: str
     message_type: str = "text"
@@ -88,6 +96,7 @@ class MessageResponse(BaseModel):
     file_url: Optional[str] = None
     file_name: Optional[str] = None
     created_at: datetime
+    user: Optional[MessageUserResponse] = None
     
     class Config:
         from_attributes = True

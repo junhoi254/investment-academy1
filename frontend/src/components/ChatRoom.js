@@ -56,36 +56,42 @@ function ChatRoom({ user, onLogin, onLogout }) {
   useEffect(() => {
     loadRoomInfo();
     loadMessages();
-    
-    // 로그인한 사용자만 WebSocket 연결
-    if (user) {
-      connectWebSocket();
-    }
 
     return () => {
       // cleanup: WebSocket 연결 종료
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
       }
       if (wsRef.current) {
         wsRef.current.onclose = null; // 재연결 방지
         wsRef.current.close();
         wsRef.current = null;
       }
+      setConnected(false);
     };
   }, [roomId]);
 
-  // user 변경 시 WebSocket 연결/해제
+  // user 변경 시 WebSocket 연결/해제 - 별도 useEffect
   useEffect(() => {
+    // 이미 연결 중이면 무시
+    if (wsRef.current && wsRef.current.readyState === WebSocket.CONNECTING) {
+      return;
+    }
+    
     if (user && !wsRef.current) {
       connectWebSocket();
     } else if (!user && wsRef.current) {
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
       wsRef.current.onclose = null;
       wsRef.current.close();
       wsRef.current = null;
       setConnected(false);
     }
-  }, [user]);
+  }, [user, roomId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -135,12 +141,18 @@ function ChatRoom({ user, onLogin, onLogout }) {
   const connectWebSocket = () => {
     if (!user) return;
     
-    // 이미 연결되어 있으면 새로 연결하지 않음
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      return;
+    // 이미 연결되어 있거나 연결 중이면 새로 연결하지 않음
+    if (wsRef.current) {
+      if (wsRef.current.readyState === WebSocket.OPEN || 
+          wsRef.current.readyState === WebSocket.CONNECTING) {
+        return;
+      }
     }
     
     const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    console.log('WebSocket 연결 시도...');
     const websocket = new WebSocket(`${WS_URL}/ws/chat/${roomId}?token=${token}`);
 
     websocket.onopen = () => {
@@ -166,12 +178,8 @@ function ChatRoom({ user, onLogin, onLogout }) {
           }
         }]);
       } else if (data.type === 'system') {
-        setMessages(prev => [...prev, {
-          id: Date.now(),
-          content: data.message,
-          message_type: 'system',
-          created_at: data.timestamp
-        }]);
+        // 시스템 메시지는 더 이상 표시하지 않음
+        console.log('System:', data.message);
       } else if (data.type === 'signal') {
         setMessages(prev => [...prev, {
           id: Date.now(),
@@ -189,16 +197,18 @@ function ChatRoom({ user, onLogin, onLogout }) {
       }
     };
 
-    websocket.onclose = () => {
-      console.log('WebSocket 연결 종료');
+    websocket.onclose = (event) => {
+      console.log('WebSocket 연결 종료:', event.code);
       setConnected(false);
       wsRef.current = null;
       
-      // 재연결 시도 (컴포넌트가 마운트되어 있을 때만)
-      if (user) {
+      // 정상 종료가 아닌 경우에만 재연결 (1000, 1001은 정상 종료)
+      if (user && event.code !== 1000 && event.code !== 1001) {
         reconnectTimeoutRef.current = setTimeout(() => {
-          connectWebSocket();
-        }, 3000);
+          if (user) {
+            connectWebSocket();
+          }
+        }, 5000); // 5초 후 재연결
       }
     };
 
@@ -363,6 +373,7 @@ function ChatRoom({ user, onLogin, onLogout }) {
   const getUserRoleBadge = (role) => {
     const badges = {
       admin: { text: '일타훈장님', class: 'admin' },
+      subadmin: { text: '서브관리자', class: 'staff' },
       staff: { text: '서브관리자', class: 'staff' },
       member: { text: '회원', class: 'member' },
       system: { text: 'SYSTEM', class: 'system' }
