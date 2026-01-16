@@ -10,6 +10,7 @@ function AdminPanel({ user, onLogout }) {
   const [activeTab, setActiveTab] = useState('users');
   const [users, setUsers] = useState([]);
   const [rooms, setRooms] = useState([]);
+  const [onlineUsers, setOnlineUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   
   // 직원 생성 폼
@@ -32,8 +33,25 @@ function AdminPanel({ user, onLogout }) {
       loadUsers();
     } else if (activeTab === 'rooms') {
       loadRooms();
+    } else if (activeTab === 'online') {
+      loadOnlineUsers();
+      // 5초마다 자동 새로고침
+      const interval = setInterval(loadOnlineUsers, 5000);
+      return () => clearInterval(interval);
     }
   }, [activeTab]);
+
+  const loadOnlineUsers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/api/admin/online-users`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setOnlineUsers(response.data.users || []);
+    } catch (error) {
+      console.error('접속자 목록 로딩 실패:', error);
+    }
+  };
 
   const loadUsers = async () => {
     setLoading(true);
@@ -198,6 +216,12 @@ function AdminPanel({ user, onLogout }) {
 
       <div className="admin-tabs">
         <button 
+          className={activeTab === 'online' ? 'active' : ''}
+          onClick={() => setActiveTab('online')}
+        >
+          🟢 접속 중 ({onlineUsers.length})
+        </button>
+        <button 
           className={activeTab === 'users' ? 'active' : ''}
           onClick={() => setActiveTab('users')}
         >
@@ -218,6 +242,41 @@ function AdminPanel({ user, onLogout }) {
       </div>
 
       <div className="admin-content">
+        {/* 접속 중인 사용자 */}
+        {activeTab === 'online' && (
+          <div className="online-section">
+            <h2>🟢 현재 접속 중인 사용자 <span className="online-count">{onlineUsers.length}명</span></h2>
+            <p className="online-note">5초마다 자동 새로고침됩니다</p>
+            {onlineUsers.length === 0 ? (
+              <div className="no-online">현재 접속 중인 사용자가 없습니다</div>
+            ) : (
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>이름</th>
+                    <th>역할</th>
+                    <th>채팅방</th>
+                    <th>접속시간</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {onlineUsers.map((u, idx) => (
+                    <tr key={idx}>
+                      <td>
+                        <span className="online-dot">●</span>
+                        {u.name}
+                      </td>
+                      <td>{getRoleName(u.role)}</td>
+                      <td>{u.room_id || '-'}번 방</td>
+                      <td>{u.connected_at ? new Date(u.connected_at).toLocaleTimeString('ko-KR') : '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
         {/* 회원 관리 */}
         {activeTab === 'users' && (
           <div className="users-section">

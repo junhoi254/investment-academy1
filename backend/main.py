@@ -49,20 +49,34 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/token", auto_error=False)
 class ConnectionManager:
     def __init__(self):
         self.active_connections: dict = {}
-        self.user_connections: dict = {}
+        self.user_connections: dict = {}    # user_id: websocket
+        self.online_users: dict = {}        # room_id: {user_id: user_info}
 
-    async def connect(self, websocket: WebSocket, room_id: str, user_id: int):
+    async def connect(self, websocket: WebSocket, room_id: str, user_id: int, user_name: str = "", user_role: str = ""):
         await websocket.accept()
         if room_id not in self.active_connections:
             self.active_connections[room_id] = []
         self.active_connections[room_id].append(websocket)
         self.user_connections[user_id] = websocket
+        
+        # 접속자 정보 저장
+        if room_id not in self.online_users:
+            self.online_users[room_id] = {}
+        self.online_users[room_id][user_id] = {
+            "user_id": user_id,
+            "name": user_name,
+            "role": user_role,
+            "connected_at": datetime.utcnow().isoformat()
+        }
 
     def disconnect(self, websocket: WebSocket, room_id: str, user_id: int):
         if room_id in self.active_connections and websocket in self.active_connections[room_id]:
             self.active_connections[room_id].remove(websocket)
         if user_id in self.user_connections:
             del self.user_connections[user_id]
+        # 접속자 정보 제거
+        if room_id in self.online_users and user_id in self.online_users[room_id]:
+            del self.online_users[room_id][user_id]
 
     async def send_message(self, message: dict, room_id: str):
         if room_id in self.active_connections:
@@ -71,6 +85,18 @@ class ConnectionManager:
                     await connection.send_json(message)
                 except:
                     pass
+    
+    def get_online_users(self, room_id: str = None):
+        if room_id:
+            return list(self.online_users.get(room_id, {}).values())
+        # 전체 접속자
+        all_users = []
+        for rid, users in self.online_users.items():
+            for uid, info in users.items():
+                info_copy = info.copy()
+                info_copy["room_id"] = rid
+                all_users.append(info_copy)
+        return all_users
 
 manager = ConnectionManager()
 
@@ -255,6 +281,13 @@ async def delete_user(user_id: int, admin: models.User = Depends(get_admin_user)
 
 # ==================== 채팅방 API ====================
 
+@app.get("/api/admin/online-users")
+async def get_online_users(room_id: int = None, admin: models.User = Depends(get_admin_user)):
+    """현재 접속 중인 사용자 목록 (관리자 전용)"""
+    if room_id:
+        return {"users": manager.get_online_users(str(room_id)), "room_id": room_id}
+    return {"users": manager.get_online_users()}
+
 @app.get("/api/rooms/free", response_model=List[schemas.RoomResponse])
 async def get_free_rooms(db: Session = Depends(get_db)):
     return db.query(models.Room).filter(models.Room.is_free == True).all()
@@ -381,14 +414,7 @@ async def websocket_chat(websocket: WebSocket, room_id: int, token: str):
             await websocket.close(code=1008)
             return
         
-        await manager.connect(websocket, str(room_id), user_id)
-        
-        # 입장 알림
-        await manager.send_message({
-            "type": "system",
-            "message": f"{user.name}님이 입장하셨습니다.",
-            "timestamp": datetime.utcnow().isoformat()
-        }, str(room_id))
+        await manager.connect(websocket, str(room_id), user_id, user.name, user.role)
         
         while True:
             data = await websocket.receive_json()
@@ -427,11 +453,6 @@ async def websocket_chat(websocket: WebSocket, room_id: int, token: str):
     except WebSocketDisconnect:
         if user_id and user:
             manager.disconnect(websocket, str(room_id), user_id)
-            await manager.send_message({
-                "type": "system",
-                "message": f"{user.name}님이 퇴장하셨습니다.",
-                "timestamp": datetime.utcnow().isoformat()
-            }, str(room_id))
     except jwt.PyJWTError as e:
         print(f"WebSocket JWT error: {e}")
         await websocket.close(code=1008)
