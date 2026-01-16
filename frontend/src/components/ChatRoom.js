@@ -537,48 +537,13 @@ function ChatRoom({ user, onLogin, onLogout }) {
 
     useEffect(() => {
       const fetchPreview = async () => {
-        // 1. 로컬 캐시 확인 - URL 전체를 해시로 사용
-        const hashCode = (str) => {
-          let hash = 0;
-          for (let i = 0; i < str.length; i++) {
-            const char = str.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash;
-          }
-          return Math.abs(hash).toString(36);
-        };
-        const cacheKey = `link_preview_${hashCode(url)}`;
-        const cached = localStorage.getItem(cacheKey);
-        
-        if (cached) {
-          try {
-            const cachedData = JSON.parse(cached);
-            // URL이 정확히 일치하는지 확인
-            if (cachedData.url === url) {
-              setPreview(cachedData);
-              setLoading(false);
-              return;
-            } else {
-              localStorage.removeItem(cacheKey);
-            }
-          } catch (e) {
-            localStorage.removeItem(cacheKey);
-          }
-        }
-
-        // 2. 캐시 없으면 API 호출
         try {
+          // 백엔드 캐시만 사용 (DB에서 관리)
           const response = await axios.get(`${API_URL}/api/link-preview?url=${encodeURIComponent(url)}`);
-          const data = response.data;
-          setPreview(data);
-          
-          // 3. 로컬 캐시에 저장
-          localStorage.setItem(cacheKey, JSON.stringify(data));
+          setPreview(response.data);
         } catch (error) {
           console.error('미리보기 로딩 실패:', error);
-          // 실패시 기본값
-          const fallback = { url, title: new URL(url).hostname, description: '', image: '' };
-          setPreview(fallback);
+          setPreview({ url, title: new URL(url).hostname, description: '', image: '' });
         }
         setLoading(false);
       };
