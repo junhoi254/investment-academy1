@@ -224,20 +224,20 @@
 }
 
 .message-content {
-  background: #1a1a1a;
+  background: #000000;
   padding: 12px 16px;
   border-radius: 12px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   border: 1px solid #333;
   word-wrap: break-word;
-  color: #e0e0e0;
+  color: #ffffff;
   line-height: 1.5;
 }
 
 .message.own .message-content {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #1a1a2e;
   color: white;
-  border: none;
+  border: 1px solid #444;
 }
 
 .system-message {
@@ -410,16 +410,16 @@
 }
 
 .message-file a {
-  color: #58a6ff;
-  text-decoration: none;
-  font-weight: 600;
+  color: #cccccc;
+  text-decoration: underline;
+  font-weight: 500;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .message-file a:hover {
-  text-decoration: underline;
+  color: #ffffff;
 }
 
 .message-input {
@@ -497,14 +497,14 @@
 
 /* ========== 링크 스타일 ========== */
 .message-link {
-  color: #58a6ff;
-  text-decoration: none;
+  color: #cccccc;
+  text-decoration: underline;
   word-break: break-all;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .message-link:hover {
-  text-decoration: underline;
+  color: #ffffff;
 }
 
 /* ========== 링크 프리뷰 - 크기 제한 ========== */
@@ -537,12 +537,13 @@
   display: flex;
   flex-direction: column;
   text-decoration: none;
-  color: inherit;
+  color: #cccccc;
   transition: background 0.2s;
 }
 
 .link-card:hover {
   background: #2a2a2a;
+  color: #ffffff;
 }
 
 .link-thumbnail {
@@ -584,7 +585,7 @@
 
 .link-url {
   font-size: 11px;
-  color: #666;
+  color: #aaaaaa;
 }
 
 /* 유튜브 프리뷰 */
