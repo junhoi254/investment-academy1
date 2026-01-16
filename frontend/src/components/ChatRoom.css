@@ -33,13 +33,16 @@
 
 .room-title h2 {
   color: #333;
-  font-size: 20px;
-  margin-bottom: 5px;
+  font-size: 16px;
+  margin: 0;
+  display: inline;
 }
 
 .connection-status {
-  font-size: 12px;
+  font-size: 11px;
   color: #666;
+  display: block;
+  margin-top: 2px;
 }
 
 .connection-status.connected {
@@ -527,10 +530,8 @@
 
   .room-title h2 {
     font-size: 14px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
     margin: 0;
+    display: inline;
   }
 
   .free-badge {
