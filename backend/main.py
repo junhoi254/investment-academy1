@@ -361,9 +361,10 @@ async def get_room_messages(
     if not room.is_free and not current_user:
         raise HTTPException(status_code=401, detail="로그인이 필요합니다")
     
+    # 최근 30개 메시지만 로딩 (속도 개선)
     messages = db.query(models.Message).filter(
         models.Message.room_id == room_id
-    ).order_by(models.Message.created_at.desc()).limit(100).all()
+    ).order_by(models.Message.created_at.desc()).limit(30).all()
     
     return messages[::-1]  # 오래된 순서로
 

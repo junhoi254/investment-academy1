@@ -28,6 +28,8 @@ function ChatRoom({ user, onLogin, onLogout }) {
   const navigate = useNavigate();
   const [room, setRoom] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [ws, setWs] = useState(null);
   const [connected, setConnected] = useState(false);
@@ -312,6 +314,50 @@ function ChatRoom({ user, onLogin, onLogout }) {
     return true;
   };
 
+  // URL 파싱 및 미리보기 생성
+  const parseLinks = (text) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const urls = text.match(urlRegex) || [];
+    
+    return { text, urls };
+  };
+
+  const renderLinkPreview = (url) => {
+    // 유튜브 감지
+    const youtubeRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/;
+    const youtubeMatch = url.match(youtubeRegex);
+    
+    if (youtubeMatch) {
+      const videoId = youtubeMatch[1];
+      return (
+        <div className="link-preview youtube-preview">
+          <iframe
+            width="100%"
+            height="200"
+            src={`https://www.youtube.com/embed/${videoId}`}
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            title="YouTube video"
+          ></iframe>
+        </div>
+      );
+    }
+    
+    // 일반 링크 미리보기
+    return (
+      <div className="link-preview">
+        <a href={url} target="_blank" rel="noopener noreferrer" className="link-card">
+          <div className="link-icon">🔗</div>
+          <div className="link-info">
+            <div className="link-title">{new URL(url).hostname}</div>
+            <div className="link-url">{url}</div>
+          </div>
+        </a>
+      </div>
+    );
+  };
+
   const renderMessage = (message) => {
     if (message.message_type === 'image') {
       return (
@@ -339,6 +385,8 @@ function ChatRoom({ user, onLogin, onLogout }) {
         </div>
       );
     } else {
+      const { text, urls } = parseLinks(message.content);
+      
       return (
         <>
           <div className="message-header">
@@ -348,7 +396,25 @@ function ChatRoom({ user, onLogin, onLogout }) {
             </span>
             <span className="message-time">{formatTime(message.created_at)}</span>
           </div>
-          <div className="message-content">{message.content}</div>
+          <div className="message-content">
+            {text.split(/(https?:\/\/[^\s]+)/g).map((part, i) => {
+              if (part.match(/^https?:\/\//)) {
+                return (
+                  <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="message-link">
+                    {part}
+                  </a>
+                );
+              }
+              return <span key={i}>{part}</span>;
+            })}
+          </div>
+          {urls.length > 0 && (
+            <div className="link-previews">
+              {urls.slice(0, 2).map((url, i) => (
+                <div key={i}>{renderLinkPreview(url)}</div>
+              ))}
+            </div>
+          )}
         </>
       );
     }
@@ -393,6 +459,21 @@ function ChatRoom({ user, onLogin, onLogout }) {
               onClick={() => navigate('/login')}
             >
               로그인하고 유료방 이용하기 →
+            </button>
+          </div>
+        )}
+        
+        {/* 더보기 버튼 */}
+        {messages.length > 0 && messages.length >= 30 && (
+          <div className="load-more-container">
+            <button 
+              className="load-more-button"
+              onClick={() => {
+                alert('이전 메시지는 스크롤하여 확인하세요!');
+              }}
+              disabled={loadingMore}
+            >
+              {loadingMore ? '로딩 중...' : `📜 최근 ${messages.length}개 메시지 표시 중`}
             </button>
           </div>
         )}
