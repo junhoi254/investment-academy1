@@ -341,3 +341,28 @@
     justify-content: space-between;
   }
 }
+
+/* 유튜브 임베드 스타일 */
+.youtube-embed {
+  margin: 15px 0;
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 비율 */
+  height: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.youtube-embed iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+}
+
+.content-line {
+  margin-bottom: 10px;
+  line-height: 1.8;
+}

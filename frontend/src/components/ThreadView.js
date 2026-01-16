@@ -118,7 +118,21 @@ function ThreadView({ user }) {
     return badges[role] || { text: '회원', class: 'member' };
   };
 
-  // URL을 링크로 변환하는 함수
+  // 유튜브 URL에서 비디오 ID 추출
+  const getYoutubeVideoId = (url) => {
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\s?]+)/,
+      /youtube\.com\/shorts\/([^&\s?]+)/
+    ];
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) return match[1];
+    }
+    return null;
+  };
+
+  // URL을 링크로 변환하는 함수 (유튜브는 임베드)
   const renderContentWithLinks = (content) => {
     if (!content) return null;
     
@@ -129,11 +143,29 @@ function ThreadView({ user }) {
       const parts = line.split(urlRegex);
       
       return (
-        <p key={lineIndex}>
+        <div key={lineIndex} className="content-line">
           {parts.map((part, partIndex) => {
             if (urlRegex.test(part)) {
               // URL 끝에 붙은 특수문자 제거
               const cleanUrl = part.replace(/[.,!?;:]+$/, '');
+              
+              // 유튜브 URL인지 확인
+              const youtubeId = getYoutubeVideoId(cleanUrl);
+              if (youtubeId) {
+                return (
+                  <div key={partIndex} className="youtube-embed">
+                    <iframe
+                      src={`https://www.youtube.com/embed/${youtubeId}`}
+                      title="YouTube video"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                );
+              }
+              
+              // 일반 링크
               return (
                 <a 
                   key={partIndex}
@@ -149,8 +181,7 @@ function ThreadView({ user }) {
             }
             return part || null;
           })}
-          {parts.length === 0 && <br />}
-        </p>
+        </div>
       );
     });
   };
