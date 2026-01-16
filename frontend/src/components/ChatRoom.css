@@ -2,6 +2,8 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh; /* 모바일 동적 뷰포트 높이 */
+  min-height: -webkit-fill-available;
   background: #f5f7fa;
 }
 
