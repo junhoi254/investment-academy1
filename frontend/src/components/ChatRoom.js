@@ -662,22 +662,28 @@ function ChatRoom({ user, onLogin, onLogout }) {
 
       {/* 메시지 입력란 */}
       <form className="message-input-container" onSubmit={sendMessage}>
-        {/* 로그인하지 않은 사용자 */}
-        {!user && (
-          <div className="no-user-input">
-            <span>💬 메시지를 보내려면 로그인이 필요합니다</span>
-            <button 
-              type="button"
-              className="input-login-button"
-              onClick={() => navigate('/login')}
-            >
-              로그인
-            </button>
+        {/* 로그인하지 않은 사용자 또는 일반 회원 - 투자 경고 슬라이드 */}
+        {(!user || user.role === 'member') && (
+          <div className="warning-slider-container">
+            <div className="warning-slider">
+              <div className="warning-slide">
+                ⚠️ 본 채팅방의 모든 정보는 투자 참고용이며, 투자 권유가 아닙니다
+              </div>
+              <div className="warning-slide">
+                📌 투자에 대한 모든 판단과 결정은 본인의 책임입니다
+              </div>
+              <div className="warning-slide">
+                💰 과거의 수익률이 미래의 수익률을 보장하지 않습니다
+              </div>
+              <div className="warning-slide">
+                🔔 원금 손실의 위험이 있으므로 신중히 투자하시기 바랍니다
+              </div>
+            </div>
           </div>
         )}
         
-        {/* 로그인한 사용자 */}
-        {user && (
+        {/* 관리자/직원만 입력란 표시 */}
+        {user && user.role !== 'member' && (
           <>
             {/* 파일 업로드 버튼 */}
             {canSendMessage() && (
