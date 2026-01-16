@@ -1,16 +1,18 @@
-/* 관리자 패널 다크 테마 */
+/* ===== 관리자 페이지 - 완전 다크 테마 ===== */
+
 .admin-container {
   min-height: 100vh;
   background: #000000;
 }
 
+/* 헤더 */
 .admin-header {
   background: #000000;
   padding: 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #1a1a1a;
+  border-bottom: 1px solid #333;
 }
 
 .admin-header h1 {
@@ -25,9 +27,9 @@
 }
 
 .admin-header-buttons button {
-  background: #1a1a1a;
+  background: #000000;
   color: #ffffff;
-  border: 1px solid #333;
+  border: 1px solid #444;
   padding: 10px 18px;
   border-radius: 10px;
   cursor: pointer;
@@ -37,23 +39,25 @@
 }
 
 .admin-header-buttons button:hover {
-  background: #333;
+  background: #1a1a1a;
+  border-color: #666;
 }
 
 /* 탭 메뉴 */
 .admin-tabs {
   display: flex;
-  background: #0a0a0a;
+  background: #000000;
   padding: 0 20px;
-  border-bottom: 1px solid #1a1a1a;
+  border-bottom: 1px solid #333;
   overflow-x: auto;
+  gap: 4px;
 }
 
 .admin-tabs button {
   background: transparent;
-  color: #666;
+  color: #888;
   border: none;
-  padding: 16px 24px;
+  padding: 16px 20px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -63,12 +67,12 @@
 }
 
 .admin-tabs button:hover {
-  color: #999;
+  color: #ffffff;
 }
 
 .admin-tabs button.active {
   color: #ffffff;
-  border-bottom-color: #0095f6;
+  border-bottom-color: #ffffff;
 }
 
 /* 컨텐츠 영역 */
@@ -78,7 +82,7 @@
   margin: 0 auto;
 }
 
-/* 섹션 */
+/* 섹션 제목 */
 .admin-content h2 {
   color: #ffffff;
   font-size: 18px;
@@ -86,23 +90,151 @@
   margin-bottom: 20px;
 }
 
-/* 테이블 */
+/* ===== 폼 스타일 ===== */
+.admin-form,
+.create-staff-form,
+.room-form,
+.thread-form-container {
+  background: #000000;
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid #333;
+  margin-bottom: 30px;
+}
+
+.admin-form h3,
+.thread-form-container h3 {
+  color: #ffffff;
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+/* 폼 레이아웃 - 가로 배치 */
+.room-form,
+.create-staff-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+/* 입력 필드 공통 */
+.admin-form input,
+.admin-form select,
+.admin-form textarea,
+.create-staff-form input,
+.room-form input,
+.room-form select,
+.room-form textarea,
+.thread-form input,
+.thread-form textarea,
+.thread-title-input,
+.thread-content-input {
+  padding: 14px 16px;
+  border: 1px solid #444;
+  border-radius: 10px;
+  background: #000000;
+  color: #ffffff;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.admin-form input::placeholder,
+.create-staff-form input::placeholder,
+.room-form input::placeholder,
+.room-form textarea::placeholder,
+.thread-form input::placeholder,
+.thread-form textarea::placeholder {
+  color: #666;
+}
+
+.admin-form input:focus,
+.admin-form select:focus,
+.admin-form textarea:focus,
+.create-staff-form input:focus,
+.room-form input:focus,
+.room-form select:focus,
+.room-form textarea:focus,
+.thread-form input:focus,
+.thread-form textarea:focus {
+  outline: none;
+  border-color: #666;
+}
+
+/* 셀렉트 박스 */
+.admin-form select,
+.room-form select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23888' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 40px;
+  cursor: pointer;
+}
+
+/* 체크박스 라벨 */
+.admin-form label,
+.room-form label,
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ffffff;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 10px 0;
+}
+
+.admin-form input[type="checkbox"],
+.room-form input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #ffffff;
+}
+
+/* 제출 버튼 */
+.admin-form button[type="submit"],
+.create-staff-form button,
+.room-form button[type="submit"],
+.create-thread-btn {
+  background: #000000;
+  color: #ffffff;
+  border: 1px solid #444;
+  padding: 14px 28px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.admin-form button[type="submit"]:hover,
+.create-staff-form button:hover,
+.room-form button[type="submit"]:hover,
+.create-thread-btn:hover {
+  background: #1a1a1a;
+  border-color: #666;
+}
+
+/* ===== 테이블 ===== */
 .admin-table {
   width: 100%;
   border-collapse: collapse;
-  background: #0a0a0a;
+  background: #000000;
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid #1a1a1a;
+  border: 1px solid #333;
 }
 
 .admin-table th {
-  background: #1a1a1a;
-  color: #999;
+  background: #0a0a0a;
+  color: #888;
   padding: 14px 16px;
   text-align: left;
   font-size: 13px;
   font-weight: 600;
+  border-bottom: 1px solid #333;
 }
 
 .admin-table td {
@@ -117,149 +249,92 @@
 }
 
 .admin-table tr:hover {
-  background: #111111;
+  background: #0a0a0a;
 }
 
-/* 배지 */
+/* ===== 배지 ===== */
 .badge {
-  padding: 4px 10px;
-  border-radius: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
+  display: inline-block;
 }
 
 .badge.approved {
-  background: #0a1a0a;
+  background: transparent;
   color: #00ba7c;
+  border: 1px solid #00ba7c;
 }
 
 .badge.pending {
-  background: #1a1a0a;
+  background: transparent;
   color: #fbbf24;
+  border: 1px solid #fbbf24;
 }
 
 .badge.free {
-  background: #0a1a0a;
+  background: transparent;
   color: #00ba7c;
+  border: 1px solid #00ba7c;
 }
 
 .badge.paid {
-  background: #0a0a1a;
-  color: #0095f6;
+  background: transparent;
+  color: #58a6ff;
+  border: 1px solid #58a6ff;
 }
 
-/* 액션 버튼 */
+/* ===== 액션 버튼 ===== */
 .action-btn {
-  background: #1a1a1a;
+  background: #000000;
   color: #ffffff;
-  border: 1px solid #333;
-  padding: 6px 12px;
-  border-radius: 6px;
+  border: 1px solid #444;
+  padding: 8px 14px;
+  border-radius: 8px;
   font-size: 12px;
   cursor: pointer;
   margin-right: 6px;
+  margin-bottom: 6px;
   transition: all 0.2s;
 }
 
 .action-btn:hover {
-  background: #333;
+  background: #1a1a1a;
+  border-color: #666;
 }
 
 .action-btn.approve {
-  background: #00ba7c;
+  color: #00ba7c;
   border-color: #00ba7c;
 }
 
 .action-btn.approve:hover {
-  background: #009966;
+  background: #00ba7c;
+  color: #000000;
 }
 
 .action-btn.delete,
 .delete-btn {
-  background: #ff4444;
+  color: #ff4444;
   border-color: #ff4444;
-  color: #ffffff;
 }
 
 .action-btn.delete:hover,
 .delete-btn:hover {
-  background: #cc3333;
-}
-
-/* 폼 스타일 */
-.admin-form {
-  background: #0a0a0a;
-  padding: 24px;
-  border-radius: 12px;
-  border: 1px solid #1a1a1a;
-  margin-bottom: 30px;
-}
-
-.admin-form h3 {
-  color: #ffffff;
-  font-size: 16px;
-  margin-bottom: 16px;
-}
-
-.admin-form input,
-.admin-form select,
-.admin-form textarea {
-  width: 100%;
-  padding: 12px 16px;
-  margin-bottom: 12px;
-  border: 1px solid #333;
-  border-radius: 10px;
-  background: #1a1a1a;
-  color: #ffffff;
-  font-size: 14px;
-}
-
-.admin-form input::placeholder,
-.admin-form textarea::placeholder {
-  color: #666;
-}
-
-.admin-form input:focus,
-.admin-form select:focus,
-.admin-form textarea:focus {
-  outline: none;
-  border-color: #0095f6;
-}
-
-.admin-form label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #ffffff;
-  font-size: 14px;
-  margin-bottom: 12px;
-  cursor: pointer;
-}
-
-.admin-form button[type="submit"] {
-  background: #ffffff;
+  background: #ff4444;
   color: #000000;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
 }
 
-.admin-form button[type="submit"]:hover {
-  background: #e0e0e0;
-}
-
-/* 온라인 사용자 섹션 */
+/* ===== 온라인 섹션 ===== */
 .online-section h2 .online-count {
   background: #00ba7c;
-  color: #ffffff;
-  padding: 4px 10px;
-  border-radius: 10px;
+  color: #000000;
+  padding: 4px 12px;
+  border-radius: 12px;
   font-size: 14px;
   margin-left: 10px;
+  font-weight: 600;
 }
 
 .online-note {
@@ -272,22 +347,18 @@
   text-align: center;
   padding: 40px;
   color: #666;
-  background: #0a0a0a;
+  background: #000000;
+  border: 1px solid #333;
   border-radius: 12px;
 }
 
-/* 쓰레드 관리 */
+/* ===== 쓰레드 관리 ===== */
 .threads-section .thread-form-container {
-  background: #0a0a0a;
+  background: #000000;
   padding: 24px;
-  border-radius: 12px;
-  border: 1px solid #1a1a1a;
+  border-radius: 16px;
+  border: 1px solid #333;
   margin-bottom: 30px;
-}
-
-.threads-section .thread-form-container h3 {
-  color: #ffffff;
-  margin-bottom: 16px;
 }
 
 .thread-form {
@@ -296,54 +367,21 @@
   gap: 12px;
 }
 
-.thread-title-input,
+.thread-title-input {
+  width: 100%;
+}
+
 .thread-content-input {
-  padding: 12px 16px;
-  border: 1px solid #333;
-  border-radius: 10px;
-  background: #1a1a1a;
-  color: #ffffff;
-  font-size: 14px;
-}
-
-.thread-title-input::placeholder,
-.thread-content-input::placeholder {
-  color: #666;
-}
-
-.thread-title-input:focus,
-.thread-content-input:focus {
-  outline: none;
-  border-color: #0095f6;
+  width: 100%;
+  min-height: 100px;
+  resize: vertical;
 }
 
 .thread-options {
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #ffffff;
-  cursor: pointer;
-}
-
-.create-thread-btn {
-  background: #ffffff;
-  color: #000000;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.create-thread-btn:hover {
-  background: #e0e0e0;
+  margin-top: 8px;
 }
 
 .thread-list-container h3 {
@@ -367,28 +405,35 @@
 
 .status-badge {
   padding: 4px 10px;
-  border-radius: 6px;
+  border-radius: 20px;
   font-size: 11px;
   font-weight: 600;
 }
 
 .status-badge.active {
-  background: #0a1a0a;
+  background: transparent;
   color: #00ba7c;
+  border: 1px solid #00ba7c;
 }
 
 .status-badge.inactive {
-  background: #1a0a0a;
+  background: transparent;
   color: #ff4444;
+  border: 1px solid #ff4444;
 }
 
 .edit-input {
-  padding: 6px 10px;
-  border: 1px solid #0095f6;
-  border-radius: 6px;
-  background: #1a1a1a;
+  padding: 8px 12px;
+  border: 1px solid #444;
+  border-radius: 8px;
+  background: #000000;
   color: #ffffff;
   width: 100%;
+}
+
+.edit-input:focus {
+  outline: none;
+  border-color: #666;
 }
 
 .action-cell {
@@ -398,47 +443,55 @@
 }
 
 .action-cell button {
-  padding: 4px 10px;
-  border: none;
+  padding: 6px 12px;
+  border: 1px solid #444;
   border-radius: 6px;
   font-size: 11px;
   cursor: pointer;
   font-weight: 500;
+  background: #000000;
+  color: #ffffff;
+  transition: all 0.2s;
+}
+
+.action-cell button:hover {
+  background: #1a1a1a;
+  border-color: #666;
 }
 
 .edit-btn {
-  background: #0095f6;
-  color: #ffffff;
+  color: #58a6ff;
+  border-color: #58a6ff;
 }
 
 .pin-btn {
-  background: #fbbf24;
-  color: #000000;
+  color: #fbbf24;
+  border-color: #fbbf24;
 }
 
 .toggle-btn {
-  background: #666;
-  color: #ffffff;
+  color: #888;
+  border-color: #444;
 }
 
 .save-btn {
-  background: #00ba7c;
-  color: #ffffff;
+  color: #00ba7c;
+  border-color: #00ba7c;
 }
 
 .cancel-btn {
-  background: #666;
-  color: #ffffff;
+  color: #888;
+  border-color: #444;
 }
 
-/* 로딩 */
+/* ===== 로딩 ===== */
 .loading {
   text-align: center;
   padding: 40px;
   color: #666;
 }
 
-/* 모바일 */
+/* ===== 모바일 ===== */
 @media (max-width: 768px) {
   .admin-header {
     flex-direction: column;
@@ -450,12 +503,24 @@
   }
   
   .admin-tabs button {
-    padding: 14px 16px;
+    padding: 14px 14px;
     font-size: 13px;
   }
   
   .admin-content {
     padding: 20px 15px;
+  }
+  
+  .room-form,
+  .create-staff-form {
+    flex-direction: column;
+  }
+  
+  .room-form input,
+  .room-form select,
+  .room-form textarea,
+  .create-staff-form input {
+    width: 100%;
   }
   
   .admin-table {
@@ -465,5 +530,10 @@
   .admin-table th,
   .admin-table td {
     padding: 10px 12px;
+  }
+  
+  .action-btn {
+    padding: 6px 10px;
+    font-size: 11px;
   }
 }

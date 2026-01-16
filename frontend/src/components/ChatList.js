@@ -93,34 +93,38 @@ function ChatList({ user, onLogout }) {
             <>
               <div className="user-info">
                 <span className="user-name">{user.name}</span>
-                <span className="user-role">
-                  {user.role === 'admin' ? '일타훈장님' : user.role === 'staff' ? '서브관리자' : '회원'}
-                </span>
+                {user.role !== 'member' && (
+                  <span className="user-role">
+                    {user.role === 'admin' ? '훈장님' : '스태프'}
+                  </span>
+                )}
                 {user.role === 'member' && getDaysRemaining() !== null && (
                   <span className="days-remaining">
-                    {getDaysRemaining()}일 남음
+                    D-{getDaysRemaining()}
                   </span>
                 )}
               </div>
               {user.role === 'admin' && (
                 <button 
-                  className="admin-button"
+                  className="icon-button admin-button"
                   onClick={() => navigate('/admin')}
+                  title="관리자 페이지"
                 >
-                  관리자 페이지
+                  ⚙️
                 </button>
               )}
-              <button className="logout-button" onClick={onLogout}>
-                로그아웃
+              <button className="icon-button logout-button" onClick={onLogout} title="로그아웃">
+                🚪
               </button>
             </>
           )}
           {!user && (
             <button 
-              className="login-button"
+              className="icon-button login-button"
               onClick={() => navigate('/login')}
+              title="로그인"
             >
-              로그인
+              👤
             </button>
           )}
         </div>
