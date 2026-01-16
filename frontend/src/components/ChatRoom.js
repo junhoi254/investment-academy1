@@ -60,10 +60,16 @@ function ChatRoom({ user, onLogin, onLogout }) {
     document.body.scrollTop = 0;
     document.documentElement.scrollTop = 0;
     
+    // ChatRoom에서만 body 스크롤 방지
+    document.body.style.overflow = 'hidden';
+    
     loadRoomInfo();
     loadMessages();
 
     return () => {
+      // 나갈 때 body 스크롤 복원
+      document.body.style.overflow = '';
+      
       // cleanup: WebSocket 연결 종료
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
