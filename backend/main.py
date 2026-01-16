@@ -13,7 +13,7 @@ import os
 import uuid
 from pathlib import Path
 
-from database import get_db, engine, SessionLocal
+from database import get_db, engine
 import models
 import schemas
 
@@ -26,14 +26,13 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="투자학당 - Investment Academy")
 
-# CORS 설정 - 모든 도메인 허용
+# CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,  # credentials와 * 동시 사용 불가
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_origins=["*"],  # 프로덕션에서는 특정 도메인만 허용
+    allow_credentials=True,
+    allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"],
 )
 
 # 업로드된 파일 서빙
@@ -362,10 +361,9 @@ async def get_room_messages(
     if not room.is_free and not current_user:
         raise HTTPException(status_code=401, detail="로그인이 필요합니다")
     
-    # 최근 30개 메시지만 로딩 (속도 개선)
     messages = db.query(models.Message).filter(
         models.Message.room_id == room_id
-    ).order_by(models.Message.created_at.desc()).limit(30).all()
+    ).order_by(models.Message.created_at.desc()).limit(100).all()
     
     return messages[::-1]  # 오래된 순서로
 
@@ -382,28 +380,6 @@ async def get_current_user_optional(token: Optional[str], db: Session):
         return user if user and user.is_approved else None
     except:
         return None
-
-# ==================== 메시지 삭제 API ====================
-
-@app.delete("/api/messages/{message_id}")
-async def delete_message(
-    message_id: int,
-    current_user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """메시지 삭제 (관리자/서브관리자만 가능)"""
-    # 관리자 또는 서브관리자만 삭제 가능
-    if current_user.role not in ["admin", "subadmin"]:
-        raise HTTPException(status_code=403, detail="메시지 삭제 권한이 없습니다")
-    
-    message = db.query(models.Message).filter(models.Message.id == message_id).first()
-    if not message:
-        raise HTTPException(status_code=404, detail="메시지를 찾을 수 없습니다")
-    
-    db.delete(message)
-    db.commit()
-    
-    return {"message": "메시지가 삭제되었습니다", "deleted_id": message_id}
 
 # ==================== 파일 업로드 API ====================
 
@@ -480,14 +456,8 @@ async def upload_file(
 # ==================== WebSocket ====================
 
 @app.websocket("/ws/chat/{room_id}")
-async def websocket_chat(websocket: WebSocket, room_id: int, token: str):
+async def websocket_chat(websocket: WebSocket, room_id: int, token: str, db: Session = Depends(get_db)):
     """채팅 WebSocket"""
-    # WebSocket에서는 Depends가 제대로 작동하지 않으므로 수동으로 세션 생성
-    db = SessionLocal()
-    
-    user_id = None
-    user = None
-    
     try:
         # 토큰 검증
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -547,22 +517,14 @@ async def websocket_chat(websocket: WebSocket, room_id: int, token: str):
             }, str(room_id))
             
     except WebSocketDisconnect:
-        if user_id and user:
-            manager.disconnect(websocket, str(room_id), user_id)
-            await manager.send_message({
-                "type": "system",
-                "message": f"{user.name}님이 퇴장하셨습니다.",
-                "timestamp": datetime.utcnow().isoformat()
-            }, str(room_id))
-    except jwt.PyJWTError as e:
-        print(f"WebSocket JWT error: {e}")
-        await websocket.close(code=1008)
+        manager.disconnect(websocket, str(room_id), user_id)
+        await manager.send_message({
+            "type": "system",
+            "message": f"{user.name}님이 퇴장하셨습니다.",
+            "timestamp": datetime.utcnow().isoformat()
+        }, str(room_id))
     except Exception as e:
         print(f"WebSocket error: {e}")
-        if user_id and user:
-            manager.disconnect(websocket, str(room_id), user_id)
-    finally:
-        db.close()
 
 # ==================== MT4 연동 API ====================
 

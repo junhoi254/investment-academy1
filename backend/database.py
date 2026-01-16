@@ -11,10 +11,6 @@ DATABASE_URL = os.getenv(
     "sqlite:///./trading_chat.db"  # 기본값: SQLite
 )
 
-# Render의 postgres:// URL을 postgresql://로 변환 (SQLAlchemy 호환)
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-
 # PostgreSQL 예시 (AWS RDS 사용 시)
 # DATABASE_URL = "postgresql://username:password@your-rds-endpoint:5432/dbname"
 

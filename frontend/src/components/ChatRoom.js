@@ -28,8 +28,6 @@ function ChatRoom({ user, onLogin, onLogout }) {
   const navigate = useNavigate();
   const [room, setRoom] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [hasMoreMessages, setHasMoreMessages] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [ws, setWs] = useState(null);
   const [connected, setConnected] = useState(false);
@@ -199,28 +197,6 @@ function ChatRoom({ user, onLogin, onLogout }) {
     setShowEmojiPicker(false);
   };
 
-  // 메시지 삭제 함수
-  const handleDeleteMessage = async (messageId) => {
-    if (!window.confirm('이 메시지를 삭제하시겠습니까?')) return;
-    
-    try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`${API_URL}/api/messages/${messageId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      // 메시지 목록에서 제거
-      setMessages(prev => prev.filter(m => m.id !== messageId));
-    } catch (error) {
-      alert('메시지 삭제 실패: ' + (error.response?.data?.detail || error.message));
-    }
-  };
-
-  // 삭제 권한 확인 (관리자/서브관리자만)
-  const canDeleteMessage = () => {
-    return user && (user.role === 'admin' || user.role === 'subadmin');
-  };
-
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -336,63 +312,10 @@ function ChatRoom({ user, onLogin, onLogout }) {
     return true;
   };
 
-  // URL 파싱 및 미리보기 생성
-  const parseLinks = (text) => {
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    const urls = text.match(urlRegex) || [];
-    
-    return { text, urls };
-  };
-
-  const renderLinkPreview = (url) => {
-    // 유튜브 감지
-    const youtubeRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/;
-    const youtubeMatch = url.match(youtubeRegex);
-    
-    if (youtubeMatch) {
-      const videoId = youtubeMatch[1];
-      return (
-        <div className="link-preview youtube-preview">
-          <iframe
-            width="100%"
-            height="200"
-            src={`https://www.youtube.com/embed/${videoId}`}
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            title="YouTube video"
-          ></iframe>
-        </div>
-      );
-    }
-    
-    // 일반 링크 미리보기
-    return (
-      <div className="link-preview">
-        <a href={url} target="_blank" rel="noopener noreferrer" className="link-card">
-          <div className="link-icon">🔗</div>
-          <div className="link-info">
-            <div className="link-title">{new URL(url).hostname}</div>
-            <div className="link-url">{url}</div>
-          </div>
-        </a>
-      </div>
-    );
-  };
-
   const renderMessage = (message) => {
     if (message.message_type === 'image') {
       return (
         <div className="message-image">
-          {canDeleteMessage() && (
-            <button 
-              className="delete-message-btn image-delete"
-              onClick={() => handleDeleteMessage(message.id)}
-              title="메시지 삭제"
-            >
-              🗑️
-            </button>
-          )}
           <img 
             src={`${API_URL}${message.file_url}`} 
             alt={message.file_name}
@@ -404,15 +327,6 @@ function ChatRoom({ user, onLogin, onLogout }) {
     } else if (message.message_type === 'file') {
       return (
         <div className="message-file">
-          {canDeleteMessage() && (
-            <button 
-              className="delete-message-btn file-delete"
-              onClick={() => handleDeleteMessage(message.id)}
-              title="메시지 삭제"
-            >
-              🗑️
-            </button>
-          )}
           <a 
             href={`${API_URL}${message.file_url}`} 
             download={message.file_name}
@@ -425,8 +339,6 @@ function ChatRoom({ user, onLogin, onLogout }) {
         </div>
       );
     } else {
-      const { text, urls } = parseLinks(message.content);
-      
       return (
         <>
           <div className="message-header">
@@ -435,35 +347,8 @@ function ChatRoom({ user, onLogin, onLogout }) {
               {getUserRoleBadge(message.user?.role).text}
             </span>
             <span className="message-time">{formatTime(message.created_at)}</span>
-            {canDeleteMessage() && (
-              <button 
-                className="delete-message-btn"
-                onClick={() => handleDeleteMessage(message.id)}
-                title="메시지 삭제"
-              >
-                🗑️
-              </button>
-            )}
           </div>
-          <div className="message-content">
-            {text.split(/(https?:\/\/[^\s]+)/g).map((part, i) => {
-              if (part.match(/^https?:\/\//)) {
-                return (
-                  <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="message-link">
-                    {part}
-                  </a>
-                );
-              }
-              return <span key={i}>{part}</span>;
-            })}
-          </div>
-          {urls.length > 0 && (
-            <div className="link-previews">
-              {urls.slice(0, 2).map((url, i) => (
-                <div key={i}>{renderLinkPreview(url)}</div>
-              ))}
-            </div>
-          )}
+          <div className="message-content">{message.content}</div>
         </>
       );
     }
@@ -508,21 +393,6 @@ function ChatRoom({ user, onLogin, onLogout }) {
               onClick={() => navigate('/login')}
             >
               로그인하고 유료방 이용하기 →
-            </button>
-          </div>
-        )}
-        
-        {/* 더보기 버튼 */}
-        {messages.length > 0 && messages.length >= 30 && (
-          <div className="load-more-container">
-            <button 
-              className="load-more-button"
-              onClick={() => {
-                alert('이전 메시지는 스크롤하여 확인하세요!');
-              }}
-              disabled={loadingMore}
-            >
-              {loadingMore ? '로딩 중...' : `📜 최근 ${messages.length}개 메시지 표시 중`}
             </button>
           </div>
         )}
