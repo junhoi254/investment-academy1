@@ -5,7 +5,7 @@
 
 .thread-list-header {
   background: #000000;
-  color: white;
+  color: #ffffff;
   padding: 16px 20px;
   display: flex;
   justify-content: space-between;
@@ -13,33 +13,28 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  border-bottom: 1px solid #262626;
+  border-bottom: 1px solid #1a1a1a;
 }
 
 .thread-list-header h1 {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
   margin: 0;
+  letter-spacing: -0.3px;
 }
 
 .thread-list-header .back-button {
   background: transparent;
-  color: white;
-  border: 1px solid #363636;
-  padding: 8px 16px;
-  border-radius: 10px;
+  color: #ffffff;
+  border: none;
+  padding: 8px 0;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-
-.thread-list-header .back-button:hover {
-  background: #1a1a1a;
+  font-size: 15px;
+  font-weight: 400;
 }
 
 .header-spacer {
-  width: 70px;
+  width: 50px;
 }
 
 .thread-list-content {
@@ -50,7 +45,7 @@
 .no-threads {
   text-align: center;
   padding: 80px 20px;
-  color: #777;
+  color: #666;
 }
 
 .threads {
@@ -58,44 +53,39 @@
   flex-direction: column;
 }
 
-/* 카드 스타일 - 쓰레드 앱처럼 */
+/* 게시글 아이템 */
 .thread-item {
   background: #000000;
-  border-bottom: 1px solid #262626;
+  border-bottom: 1px solid #1a1a1a;
   padding: 16px;
-  transition: background 0.2s;
-}
-
-.thread-item:hover {
-  background: #0a0a0a;
 }
 
 .thread-item.pinned {
-  background: #0d0d00;
-  border-left: 3px solid #fbbf24;
+  background: #000000;
 }
 
-/* 헤더 - 프로필 스타일 */
+/* 헤더 */
 .thread-header {
   display: flex;
   align-items: flex-start;
   gap: 12px;
   cursor: pointer;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .author-avatar {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+  background: #333;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
-  font-weight: 700;
-  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
   flex-shrink: 0;
+  border: 1px solid #333;
 }
 
 .thread-header-content {
@@ -106,62 +96,55 @@
 .thread-author-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
+  gap: 6px;
+  margin-bottom: 2px;
 }
 
 .thread-author {
-  color: #fff;
-  font-weight: 700;
-  font-size: 15px;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 14px;
 }
 
 .verified-badge {
   color: #0095f6;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .thread-date {
-  color: #777;
+  color: #666;
   font-size: 14px;
+}
+
+.thread-date::before {
+  content: "· ";
 }
 
 .pin-icon {
-  color: #fbbf24;
-  font-size: 14px;
-}
-
-.thread-title-row {
-  display: none;
+  color: #666;
+  font-size: 12px;
+  margin-left: 4px;
 }
 
 .thread-title {
-  color: #fff;
-  font-size: 15px;
+  color: #ffffff;
+  font-size: 14px;
   font-weight: 400;
-  margin: 0 0 2px 0;
+  margin: 0;
   line-height: 1.4;
-}
-
-.thread-meta {
-  display: none;
-}
-
-.thread-stats-inline {
-  display: none;
 }
 
 /* 내용 영역 */
 .thread-content {
-  color: #f5f5f5;
-  font-size: 15px;
+  color: #ffffff;
+  font-size: 14px;
   line-height: 1.5;
-  padding-left: 52px;
+  padding-left: 48px;
   margin-bottom: 12px;
 }
 
 .content-line {
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .content-link {
@@ -193,69 +176,41 @@
   border-radius: 12px;
 }
 
-/* 액션 버튼들 - 쓰레드 스타일 */
+/* 액션 버튼들 */
 .thread-actions {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding-left: 52px;
-  margin-bottom: 8px;
+  gap: 20px;
+  padding-left: 48px;
 }
 
 .action-btn {
   background: none;
   border: none;
-  color: #777;
-  font-size: 14px;
+  color: #666;
+  font-size: 13px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 8px 0;
-  transition: color 0.2s;
 }
 
 .action-btn:hover {
-  color: #fff;
-}
-
-.action-btn.active {
-  color: #ff3b5c;
+  color: #999;
 }
 
 .action-icon {
-  font-size: 20px;
-}
-
-/* 댓글 토글 버튼 */
-.comments-toggle {
-  background: none;
-  border: none;
-  color: #777;
-  font-size: 14px;
-  cursor: pointer;
-  padding: 8px 0;
-  padding-left: 52px;
-  width: 100%;
-  text-align: left;
-  transition: color 0.2s;
-}
-
-.comments-toggle:hover {
-  color: #aaa;
-}
-
-.comments-toggle.active {
-  color: #0095f6;
+  font-size: 18px;
 }
 
 /* 댓글 섹션 */
 .comments-section {
-  background: #0a0a0a;
-  padding: 12px 16px 16px;
-  padding-left: 52px;
-  margin-left: 16px;
-  border-left: 2px solid #262626;
+  background: #000000;
+  padding: 16px;
+  padding-left: 48px;
+  margin-top: 8px;
+  border-top: 1px solid #1a1a1a;
 }
 
 .comments-list {
@@ -274,16 +229,16 @@
 }
 
 .comment-avatar {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #405de6, #5851db, #833ab4);
+  background: #333;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
   flex-shrink: 0;
 }
 
@@ -295,42 +250,41 @@
 .comment-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   margin-bottom: 4px;
   flex-wrap: wrap;
 }
 
 .comment-author {
-  font-weight: 700;
-  font-size: 14px;
-  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+  color: #ffffff;
 }
 
 .role-badge {
-  padding: 2px 8px;
-  border-radius: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .role-badge.admin {
-  background: linear-gradient(135deg, #833ab4, #fd1d1d);
-  color: white;
+  background: #1a1a1a;
+  color: #0095f6;
 }
 
 .role-badge.staff {
-  background: #00ba7c;
-  color: white;
+  background: #1a1a1a;
+  color: #00ba7c;
 }
 
 .role-badge.member {
-  background: #262626;
-  color: #999;
+  display: none;
 }
 
 .comment-date {
   font-size: 12px;
-  color: #555;
+  color: #666;
 }
 
 .delete-btn {
@@ -339,19 +293,19 @@
   cursor: pointer;
   opacity: 0.4;
   padding: 0;
-  font-size: 14px;
+  font-size: 12px;
   margin-left: auto;
-  color: #777;
+  color: #666;
 }
 
 .delete-btn:hover {
   opacity: 1;
-  color: #ff3b5c;
+  color: #ff4444;
 }
 
 .comment-content {
   font-size: 14px;
-  color: #e4e4e4;
+  color: #ffffff;
   line-height: 1.4;
 }
 
@@ -361,48 +315,44 @@
   gap: 10px;
   align-items: center;
   padding-top: 12px;
-  border-top: 1px solid #262626;
+  border-top: 1px solid #1a1a1a;
 }
 
 .comment-form input {
   flex: 1;
   padding: 12px 16px;
-  border: 1px solid #363636;
-  border-radius: 22px;
+  border: 1px solid #333;
+  border-radius: 20px;
   font-size: 14px;
-  background: #000;
-  color: #fff;
-  transition: border-color 0.2s;
+  background: #000000;
+  color: #ffffff;
 }
 
 .comment-form input::placeholder {
-  color: #555;
+  color: #666;
 }
 
 .comment-form input:focus {
   outline: none;
-  border-color: #555;
+  border-color: #444;
 }
 
 .comment-form button {
-  background: #fff;
-  color: #000;
+  background: transparent;
+  color: #0095f6;
   border: none;
-  padding: 10px 20px;
-  border-radius: 20px;
+  padding: 12px 16px;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
 }
 
 .comment-form button:hover:not(:disabled) {
-  background: #e0e0e0;
+  color: #00b4ff;
 }
 
 .comment-form button:disabled {
-  background: #333;
-  color: #666;
+  color: #333;
   cursor: not-allowed;
 }
 
@@ -410,39 +360,30 @@
   text-align: center;
   padding: 100px 20px;
   color: #666;
-  font-size: 16px;
+  font-size: 15px;
 }
 
 /* 모바일 */
 @media (max-width: 768px) {
   .thread-content {
     padding-left: 0;
-    margin-top: 10px;
+    margin-top: 12px;
   }
   
   .thread-actions {
     padding-left: 0;
   }
   
-  .comments-toggle {
-    padding-left: 0;
-  }
-  
   .comments-section {
-    padding-left: 16px;
-    margin-left: 0;
-    border-left: none;
+    padding-left: 0;
   }
   
   .comment-form {
     flex-direction: column;
-  }
-  
-  .comment-form input {
-    width: 100%;
+    align-items: stretch;
   }
   
   .comment-form button {
-    width: 100%;
+    text-align: right;
   }
 }

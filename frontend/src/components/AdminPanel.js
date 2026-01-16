@@ -280,6 +280,21 @@ function AdminPanel({ user, onLogout }) {
     }
   };
 
+  const deleteRoom = async (roomId, roomName) => {
+    if (!window.confirm(`"${roomName}" 채팅방을 삭제하시겠습니까?\n\n⚠️ 모든 메시지도 함께 삭제됩니다!`)) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_URL}/api/admin/rooms/${roomId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      alert('채팅방이 삭제되었습니다');
+      loadRooms();
+    } catch (error) {
+      alert('채팅방 삭제 실패: ' + error.response?.data?.detail);
+    }
+  };
+
   const getRoleName = (role) => {
     const roles = {
       admin: '일타훈장님',
@@ -574,6 +589,7 @@ function AdminPanel({ user, onLogout }) {
                     <th>무료/유료</th>
                     <th>설명</th>
                     <th>생성일</th>
+                    <th>관리</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -590,6 +606,14 @@ function AdminPanel({ user, onLogout }) {
                       </td>
                       <td>{room.description}</td>
                       <td>{formatDate(room.created_at)}</td>
+                      <td>
+                        <button 
+                          className="delete-btn"
+                          onClick={() => deleteRoom(room.id, room.name)}
+                        >
+                          🗑️ 삭제
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
