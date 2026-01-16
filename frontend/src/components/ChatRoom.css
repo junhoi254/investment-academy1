@@ -495,24 +495,267 @@
 
 /* 모바일 대응 */
 @media (max-width: 768px) {
-  .message {
-    max-width: 85%;
+  .chatroom-container {
+    height: 100vh;
+    height: 100dvh; /* 모바일 주소창 고려 */
   }
-  
+
   .chatroom-header {
-    padding: 10px 15px;
+    padding: 8px 12px;
+    flex-wrap: nowrap;
+    gap: 8px;
   }
-  
+
+  .back-button {
+    padding: 6px 10px;
+    font-size: 12px;
+    min-width: auto;
+  }
+
+  .room-title {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+  }
+
   .room-title h2 {
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+  }
+
+  .free-badge {
+    padding: 2px 6px;
+    font-size: 10px;
+    margin-left: 4px;
+  }
+
+  .connection-status {
+    font-size: 10px;
+    display: block;
+    margin-top: 2px;
+  }
+
+  .header-actions {
+    gap: 8px;
+  }
+
+  .user-name {
+    display: none; /* 모바일에서 이름 숨김 */
+  }
+
+  .logout-button, .login-button {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  /* 메시지 영역 */
+  .messages-container {
+    padding: 8px;
+  }
+
+  .message {
+    max-width: 88%;
+    margin-bottom: 10px;
+  }
+
+  .message-header {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .sender-name {
+    font-size: 12px;
+  }
+
+  .role-badge {
+    padding: 1px 6px;
+    font-size: 9px;
+  }
+
+  .message-time {
+    font-size: 10px;
+  }
+
+  .message-content {
+    padding: 10px 12px;
+    font-size: 14px;
+    line-height: 1.4;
+    word-break: break-word;
+  }
+
+  .delete-message-btn {
+    font-size: 12px;
+    padding: 2px 4px;
+  }
+
+  /* 링크 미리보기 */
+  .link-preview {
+    margin-top: 6px;
+  }
+
+  .link-thumbnail {
+    max-height: 120px;
+  }
+
+  .link-info {
+    padding: 8px;
+  }
+
+  .link-title {
+    font-size: 13px;
+  }
+
+  .link-description {
+    font-size: 11px;
+    -webkit-line-clamp: 2;
+  }
+
+  .link-url {
+    font-size: 10px;
+  }
+
+  .youtube-preview iframe {
+    height: 160px;
+  }
+
+  /* 시스템 메시지 */
+  .system-message {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+
+  /* 입력 영역 */
+  .message-input-container {
+    padding: 10px;
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+
+  .upload-buttons {
+    gap: 4px;
+  }
+
+  .upload-btn, .emoji-btn {
+    width: 36px;
+    height: 36px;
     font-size: 16px;
   }
-  
-  .messages-container {
+
+  .message-input {
+    padding: 10px 14px;
+    font-size: 14px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .send-button {
+    padding: 10px 16px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  /* 이모지 피커 */
+  .emoji-picker {
+    bottom: 60px;
+    left: 10px;
+    right: 10px;
+    max-width: none;
+    grid-template-columns: repeat(8, 1fr);
+    padding: 10px;
+    max-height: 200px;
+  }
+
+  .emoji-item {
+    font-size: 20px;
+    padding: 6px;
+  }
+
+  /* 이미지/파일 메시지 */
+  .message-image img {
+    max-height: 200px;
+  }
+
+  .message-file a {
+    font-size: 13px;
+  }
+
+  /* 로그인 안내 */
+  .no-user-input {
+    padding: 10px 12px;
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+
+  .no-user-input span {
+    font-size: 12px;
+  }
+
+  .input-login-button {
+    width: 100%;
     padding: 10px;
   }
-  
-  .link-preview iframe {
-    height: 180px;
+
+  /* 하단 로그인 프롬프트 */
+  .bottom-login-prompt {
+    padding: 12px;
+    margin: 10px 0;
+  }
+
+  .bottom-login-prompt p {
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+
+  .prompt-login-button {
+    padding: 8px 20px;
+    font-size: 12px;
+  }
+
+  /* 더보기 버튼 */
+  .load-more-button {
+    padding: 8px 16px;
+    font-size: 12px;
+  }
+}
+
+/* 아주 작은 화면 (iPhone SE 등) */
+@media (max-width: 380px) {
+  .chatroom-header {
+    padding: 6px 8px;
+  }
+
+  .back-button {
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+
+  .room-title h2 {
+    font-size: 12px;
+  }
+
+  .logout-button, .login-button {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+
+  .message-content {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .upload-btn, .emoji-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+
+  .send-button {
+    padding: 8px 12px;
+    font-size: 12px;
   }
 }
 
