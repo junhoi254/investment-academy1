@@ -1,6 +1,4 @@
-/* ===== 전체 다크 테마 ===== */
-
-/* 컨테이너 */
+/* ===== 채팅방 전체 컨테이너 ===== */
 .chatroom-container {
   display: flex;
   flex-direction: column;
@@ -17,7 +15,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  border-bottom: 1px solid #1a1a1a;
+  border-bottom: 1px solid #333;
   flex-shrink: 0;
 }
 
@@ -27,18 +25,18 @@
   width: 44px;
   height: 44px;
   font-size: 20px;
-  font-weight: 400;
   border: 1px solid #444;
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .back-button:hover {
-  background: #333;
+  background: #1a1a1a;
+  border-color: #666;
 }
 
 .room-title {
@@ -51,26 +49,26 @@
   color: #ffffff;
   font-size: 16px;
   font-weight: 700;
-  margin: 0 0 4px 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  margin: 0 0 2px 0;
+  display: inline;
 }
 
 .free-badge {
   background: #00ba7c;
   color: #ffffff;
-  padding: 3px 10px;
-  border-radius: 12px;
+  padding: 2px 8px;
+  border-radius: 10px;
   font-size: 11px;
   font-weight: 600;
   margin-left: 8px;
+  vertical-align: middle;
 }
 
 .connection-status {
   display: block;
   font-size: 11px;
   color: #666;
+  margin-top: 2px;
 }
 
 .connection-status.connected {
@@ -89,18 +87,22 @@
 }
 
 .search-toggle-btn {
-  background: #1a1a1a;
+  background: #000000;
   color: #ffffff;
-  border: 1px solid #333;
-  padding: 10px 14px;
-  border-radius: 10px;
+  border: 1px solid #444;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   cursor: pointer;
-  font-size: 16px;
-  transition: all 0.2s;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .search-toggle-btn:hover {
-  background: #333;
+  background: #1a1a1a;
+  border-color: #666;
 }
 
 .user-name {
@@ -114,53 +116,56 @@
 }
 
 .icon-button {
-  background: #1a1a1a;
+  background: #000000;
   color: #ffffff;
-  border: 1px solid #333;
-  padding: 10px 14px;
-  border-radius: 10px;
+  border: 1px solid #444;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   cursor: pointer;
-  font-size: 16px;
-  transition: all 0.2s;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .icon-button:hover {
-  background: #333;
+  background: #1a1a1a;
+  border-color: #666;
 }
 
 /* ===== 검색 바 ===== */
 .search-bar {
-  background: #0a0a0a;
+  background: #000000;
   padding: 12px 16px;
   display: flex;
   align-items: center;
   gap: 10px;
-  border-bottom: 1px solid #1a1a1a;
+  border-bottom: 1px solid #333;
   flex-shrink: 0;
 }
 
-.search-bar input,
 .search-input {
   flex: 1;
   padding: 10px 14px;
-  border: 1px solid #333;
+  border: 1px solid #444;
   border-radius: 10px;
   font-size: 14px;
-  background: #1a1a1a;
+  background: #000000;
   color: #ffffff;
 }
 
-.search-bar input::placeholder {
+.search-input::placeholder {
   color: #666;
 }
 
-.search-bar input:focus {
+.search-input:focus {
   outline: none;
-  border-color: #0095f6;
+  border-color: #666;
 }
 
 .search-count {
-  color: #666;
+  color: #888;
   font-size: 12px;
   white-space: nowrap;
 }
@@ -178,7 +183,7 @@
 
 .search-info {
   background: #1a1a1a;
-  color: #0095f6;
+  color: #58a6ff;
   padding: 10px 16px;
   font-size: 13px;
   text-align: center;
@@ -196,7 +201,6 @@
   background: #000000;
 }
 
-/* 스크롤바 */
 .messages-container::-webkit-scrollbar {
   width: 6px;
 }
@@ -243,23 +247,23 @@
   border-radius: 6px;
   font-size: 10px;
   font-weight: 600;
+  background: transparent;
+  border: 1px solid;
 }
 
 .role-badge.admin {
-  background: #1a1a1a;
-  color: #0095f6;
-  border: 1px solid #0095f6;
+  color: #58a6ff;
+  border-color: #58a6ff;
 }
 
 .role-badge.staff {
-  background: #1a1a1a;
   color: #00ba7c;
-  border: 1px solid #00ba7c;
+  border-color: #00ba7c;
 }
 
 .role-badge.member {
-  background: #1a1a1a;
-  color: #666;
+  color: #888;
+  border-color: #444;
 }
 
 .message-time {
@@ -383,7 +387,7 @@
 }
 
 .message-file a {
-  color: #0095f6;
+  color: #58a6ff;
   text-decoration: none;
   font-size: 14px;
 }
@@ -405,7 +409,6 @@
   overflow: hidden;
   margin-top: 6px;
   cursor: pointer;
-  transition: all 0.2s;
 }
 
 .link-preview:hover {
@@ -523,7 +526,7 @@
 .message-input-container {
   background: #000000;
   padding: 12px 16px;
-  border-top: 1px solid #1a1a1a;
+  border-top: 1px solid #333;
   flex-shrink: 0;
 }
 
@@ -551,56 +554,17 @@
   100% { transform: translateX(-50%); }
 }
 
-/* 입력 폼 */
-.input-form {
-  display: flex;
-  gap: 10px;
-  align-items: flex-end;
-}
-
-.input-wrapper {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #000000;
-  border: 1px solid #444;
-  border-radius: 24px;
-  padding: 4px 4px 4px 16px;
-}
-
-.input-wrapper input,
-.input-wrapper textarea,
-.message-input {
-  flex: 1;
-  border: 1px solid #444;
-  border-radius: 12px;
-  background: #000000;
-  color: #ffffff;
-  font-size: 15px;
-  padding: 12px 16px;
-  resize: none;
-  outline: none;
-}
-
-.input-wrapper input::placeholder,
-.message-input::placeholder {
-  color: #888;
-}
-
-.message-input:focus {
-  border-color: #666;
-}
-
 /* 업로드 버튼 컨테이너 */
 .upload-buttons {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 4px;
   background: #000000;
   border: 1px solid #444;
   border-radius: 12px;
   padding: 6px 10px;
+  margin-right: 10px;
+  vertical-align: middle;
 }
 
 .upload-btn {
@@ -610,7 +574,6 @@
   font-size: 18px;
   cursor: pointer;
   padding: 6px 8px;
-  transition: all 0.2s;
   border-radius: 6px;
 }
 
@@ -623,53 +586,19 @@
   cursor: not-allowed;
 }
 
-/* 이모지/파일 버튼 */
-.emoji-btn,
-.file-btn,
-.image-btn {
+/* 이모지 버튼 */
+.emoji-btn {
   background: transparent;
   border: none;
   color: #ffffff;
   font-size: 18px;
   cursor: pointer;
   padding: 6px 8px;
-  transition: all 0.2s;
   border-radius: 6px;
 }
 
-.emoji-btn:hover,
-.file-btn:hover,
-.image-btn:hover {
+.emoji-btn:hover {
   background: #1a1a1a;
-}
-
-/* 전송 버튼 */
-.send-btn,
-.send-button {
-  background: #000000;
-  color: #ffffff;
-  border: 1px solid #444;
-  padding: 12px 20px;
-  border-radius: 12px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  transition: all 0.2s;
-  flex-shrink: 0;
-}
-
-.send-btn:hover,
-.send-button:hover {
-  background: #1a1a1a;
-  border-color: #666;
-}
-
-.send-btn:disabled,
-.send-button:disabled {
-  color: #666;
-  border-color: #333;
-  background: #000000;
-  cursor: not-allowed;
 }
 
 /* 이모지 피커 */
@@ -693,11 +622,56 @@
   cursor: pointer;
   padding: 6px;
   border-radius: 6px;
-  transition: background 0.2s;
 }
 
 .emoji-picker .emoji-item:hover {
   background: #1a1a1a;
+}
+
+/* 메시지 입력창 */
+.message-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid #444;
+  border-radius: 12px;
+  font-size: 15px;
+  background: #000000;
+  color: #ffffff;
+  margin-right: 10px;
+  vertical-align: middle;
+}
+
+.message-input::placeholder {
+  color: #666;
+}
+
+.message-input:focus {
+  outline: none;
+  border-color: #666;
+}
+
+/* 전송 버튼 */
+.send-button {
+  background: #000000;
+  color: #ffffff;
+  border: 1px solid #444;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.send-button:hover {
+  background: #1a1a1a;
+  border-color: #666;
+}
+
+.send-button:disabled {
+  color: #666;
+  border-color: #333;
+  cursor: not-allowed;
 }
 
 /* 읽기 전용 메시지 */
@@ -716,7 +690,7 @@
 
 .load-more-button {
   background: #1a1a1a;
-  color: #666;
+  color: #888;
   border: 1px solid #333;
   padding: 8px 16px;
   border-radius: 20px;
@@ -739,9 +713,12 @@
     gap: 8px;
   }
   
-  .back-button {
-    padding: 8px 12px;
-    font-size: 13px;
+  .back-button,
+  .search-toggle-btn,
+  .icon-button {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
   }
   
   .room-title h2 {
@@ -750,11 +727,6 @@
   
   .user-name {
     display: none;
-  }
-  
-  .search-toggle-btn,
-  .icon-button {
-    padding: 8px 12px;
   }
   
   .messages-container {
@@ -779,13 +751,7 @@
   }
 }
 
-/* 아주 작은 화면 */
 @media (max-width: 380px) {
-  .back-button {
-    padding: 8px 10px;
-    font-size: 12px;
-  }
-  
   .free-badge {
     display: none;
   }
