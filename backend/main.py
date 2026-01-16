@@ -457,8 +457,15 @@ async def upload_file(
 # ==================== WebSocket ====================
 
 @app.websocket("/ws/chat/{room_id}")
-async def websocket_chat(websocket: WebSocket, room_id: int, token: str, db: Session = Depends(get_db)):
+async def websocket_chat(websocket: WebSocket, room_id: int, token: str):
     """채팅 WebSocket"""
+    # WebSocket에서는 Depends가 제대로 작동하지 않으므로 수동으로 세션 생성
+    from database import SessionLocal
+    db = SessionLocal()
+    
+    user_id = None
+    user = None
+    
     try:
         # 토큰 검증
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -518,14 +525,22 @@ async def websocket_chat(websocket: WebSocket, room_id: int, token: str, db: Ses
             }, str(room_id))
             
     except WebSocketDisconnect:
-        manager.disconnect(websocket, str(room_id), user_id)
-        await manager.send_message({
-            "type": "system",
-            "message": f"{user.name}님이 퇴장하셨습니다.",
-            "timestamp": datetime.utcnow().isoformat()
-        }, str(room_id))
+        if user_id and user:
+            manager.disconnect(websocket, str(room_id), user_id)
+            await manager.send_message({
+                "type": "system",
+                "message": f"{user.name}님이 퇴장하셨습니다.",
+                "timestamp": datetime.utcnow().isoformat()
+            }, str(room_id))
+    except jwt.PyJWTError as e:
+        print(f"WebSocket JWT error: {e}")
+        await websocket.close(code=1008)
     except Exception as e:
         print(f"WebSocket error: {e}")
+        if user_id and user:
+            manager.disconnect(websocket, str(room_id), user_id)
+    finally:
+        db.close()
 
 # ==================== MT4 연동 API ====================
 
