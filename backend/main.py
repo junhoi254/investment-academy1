@@ -26,31 +26,30 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="투자학당 - Investment Academy")
 
-# CORS 설정 - 모든 도메인 허용
+# CORS 설정
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=False,  # credentials와 * 동시 사용 불가
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_credentials=False,
+    allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"],
 )
 
 # 업로드된 파일 서빙
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # JWT 설정
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production-12345")
+SECRET_KEY = os.getenv("SECRET_KEY", "investment-academy-secret-key-2024")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24시간
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/token", auto_error=False)
 
 # WebSocket 연결 관리자
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: dict = {}  # room_id: [websocket connections]
-        self.user_connections: dict = {}    # user_id: websocket
+        self.active_connections: dict = {}
+        self.user_connections: dict = {}
 
     async def connect(self, websocket: WebSocket, room_id: str, user_id: int):
         await websocket.accept()
@@ -60,7 +59,7 @@ class ConnectionManager:
         self.user_connections[user_id] = websocket
 
     def disconnect(self, websocket: WebSocket, room_id: str, user_id: int):
-        if room_id in self.active_connections:
+        if room_id in self.active_connections and websocket in self.active_connections[room_id]:
             self.active_connections[room_id].remove(websocket)
         if user_id in self.user_connections:
             del self.user_connections[user_id]
@@ -68,12 +67,10 @@ class ConnectionManager:
     async def send_message(self, message: dict, room_id: str):
         if room_id in self.active_connections:
             for connection in self.active_connections[room_id]:
-                await connection.send_json(message)
-
-    async def broadcast(self, message: dict):
-        for connections in self.active_connections.values():
-            for connection in connections:
-                await connection.send_json(message)
+                try:
+                    await connection.send_json(message)
+                except:
+                    pass
 
 manager = ConnectionManager()
 
@@ -86,16 +83,11 @@ def get_password_hash(password: str) -> str:
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 def format_phone_number(phone: str) -> str:
-    """전화번호 포맷팅 (자동으로 - 추가)"""
     phone = phone.replace("-", "")
     if len(phone) == 11:
         return f"{phone[:3]}-{phone[3:7]}-{phone[7:]}"
@@ -103,34 +95,44 @@ def format_phone_number(phone: str) -> str:
         return f"{phone[:3]}-{phone[3:6]}-{phone[6:]}"
     return phone
 
+# 인증 함수
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="인증 정보가 유효하지 않습니다",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    if not token:
+        raise HTTPException(status_code=401, detail="인증이 필요합니다")
+    
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: int = payload.get("sub")
         if user_id is None:
-            raise credentials_exception
+            raise HTTPException(status_code=401, detail="유효하지 않은 토큰입니다")
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="토큰이 만료되었습니다")
     except jwt.PyJWTError:
-        raise credentials_exception
+        raise HTTPException(status_code=401, detail="유효하지 않은 토큰입니다")
     
     user = db.query(models.User).filter(models.User.id == user_id).first()
-    if user is None:
-        raise credentials_exception
-    
-    # 계정 승인 확인
+    if not user:
+        raise HTTPException(status_code=401, detail="사용자를 찾을 수 없습니다")
     if not user.is_approved:
         raise HTTPException(status_code=403, detail="관리자 승인 대기 중입니다")
-    
-    # 회원 기간 확인
-    if user.role == "member" and user.expiry_date:
-        if user.expiry_date < datetime.utcnow():
-            raise HTTPException(status_code=403, detail="회원 기간이 만료되었습니다")
+    if user.role == "member" and user.expiry_date and user.expiry_date < datetime.utcnow():
+        raise HTTPException(status_code=403, detail="회원 기간이 만료되었습니다")
     
     return user
+
+async def get_current_user_optional(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    """선택적 인증 - 실패해도 None 반환"""
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        if user_id is None:
+            return None
+        user = db.query(models.User).filter(models.User.id == user_id).first()
+        return user if user and user.is_approved else None
+    except:
+        return None
 
 async def get_admin_user(current_user: models.User = Depends(get_current_user)):
     if current_user.role != "admin":
@@ -141,206 +143,128 @@ async def get_admin_user(current_user: models.User = Depends(get_current_user)):
 
 @app.post("/api/register", response_model=schemas.UserResponse)
 async def register(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
-    """회원가입"""
-    # 전화번호 포맷팅
     phone = format_phone_number(user_data.phone)
     
-    # 중복 확인
-    existing_user = db.query(models.User).filter(models.User.phone == phone).first()
-    if existing_user:
+    existing = db.query(models.User).filter(models.User.phone == phone).first()
+    if existing:
         raise HTTPException(status_code=400, detail="이미 등록된 전화번호입니다")
     
-    # 사용자 생성
-    hashed_password = get_password_hash(user_data.password)
     new_user = models.User(
         phone=phone,
-        password=hashed_password,
+        password=get_password_hash(user_data.password),
         name=user_data.name,
         role="member",
-        is_approved=False  # 관리자 승인 필요
+        is_approved=False
     )
-    
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    
     return new_user
 
 @app.post("/api/token")
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    """로그인"""
     phone = format_phone_number(form_data.username)
     user = db.query(models.User).filter(models.User.phone == phone).first()
     
     if not user or not verify_password(form_data.password, user.password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="전화번호 또는 비밀번호가 올바르지 않습니다",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise HTTPException(status_code=401, detail="전화번호 또는 비밀번호가 올바르지 않습니다")
     
     if not user.is_approved:
         raise HTTPException(status_code=403, detail="관리자 승인 대기 중입니다")
     
-    # 회원 기간 확인
-    if user.role == "member" and user.expiry_date:
-        if user.expiry_date < datetime.utcnow():
-            raise HTTPException(status_code=403, detail="회원 기간이 만료되었습니다")
+    if user.role == "member" and user.expiry_date and user.expiry_date < datetime.utcnow():
+        raise HTTPException(status_code=403, detail="회원 기간이 만료되었습니다")
     
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.id, "role": user.role}, 
-        expires_delta=access_token_expires
+        data={"sub": user.id, "role": user.role},
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
     
     return {
-        "access_token": access_token, 
+        "access_token": access_token,
         "token_type": "bearer",
-        "user": {
-            "id": user.id,
-            "phone": user.phone,
-            "name": user.name,
-            "role": user.role
-        }
+        "user": {"id": user.id, "phone": user.phone, "name": user.name, "role": user.role}
     }
 
 @app.get("/api/me", response_model=schemas.UserResponse)
 async def get_me(current_user: models.User = Depends(get_current_user)):
-    """현재 사용자 정보"""
     return current_user
 
 # ==================== 관리자 API ====================
 
 @app.get("/api/admin/users", response_model=List[schemas.UserResponse])
-async def get_all_users(
-    admin: models.User = Depends(get_admin_user),
-    db: Session = Depends(get_db)
-):
-    """모든 사용자 조회"""
-    users = db.query(models.User).all()
-    return users
+async def get_all_users(admin: models.User = Depends(get_admin_user), db: Session = Depends(get_db)):
+    return db.query(models.User).all()
 
 @app.put("/api/admin/users/{user_id}/approve")
-async def approve_user(
-    user_id: int,
-    admin: models.User = Depends(get_admin_user),
-    db: Session = Depends(get_db)
-):
-    """회원 승인"""
+async def approve_user(user_id: int, admin: models.User = Depends(get_admin_user), db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
-    
     user.is_approved = True
     db.commit()
-    
     return {"message": "승인되었습니다"}
 
 @app.put("/api/admin/users/{user_id}/password")
-async def change_user_password(
-    user_id: int,
-    password_data: schemas.PasswordChange,
-    admin: models.User = Depends(get_admin_user),
-    db: Session = Depends(get_db)
-):
-    """회원/직원 비밀번호 변경"""
+async def change_user_password(user_id: int, password_data: schemas.PasswordChange, admin: models.User = Depends(get_admin_user), db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
-    
     user.password = get_password_hash(password_data.new_password)
     db.commit()
-    
     return {"message": "비밀번호가 변경되었습니다"}
 
 @app.put("/api/admin/users/{user_id}/expiry")
-async def update_user_expiry(
-    user_id: int,
-    expiry_data: schemas.ExpiryUpdate,
-    admin: models.User = Depends(get_admin_user),
-    db: Session = Depends(get_db)
-):
-    """회원 기간 설정"""
+async def update_user_expiry(user_id: int, expiry_data: schemas.ExpiryUpdate, admin: models.User = Depends(get_admin_user), db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
-    
     user.expiry_date = expiry_data.expiry_date
     db.commit()
-    
     return {"message": "회원 기간이 설정되었습니다"}
 
 @app.post("/api/admin/staff", response_model=schemas.UserResponse)
-async def create_staff(
-    staff_data: schemas.StaffCreate,
-    admin: models.User = Depends(get_admin_user),
-    db: Session = Depends(get_db)
-):
-    """직원 생성"""
+async def create_staff(staff_data: schemas.StaffCreate, admin: models.User = Depends(get_admin_user), db: Session = Depends(get_db)):
     phone = format_phone_number(staff_data.phone)
-    
-    existing_user = db.query(models.User).filter(models.User.phone == phone).first()
-    if existing_user:
+    existing = db.query(models.User).filter(models.User.phone == phone).first()
+    if existing:
         raise HTTPException(status_code=400, detail="이미 등록된 전화번호입니다")
     
-    hashed_password = get_password_hash(staff_data.password)
     new_staff = models.User(
         phone=phone,
-        password=hashed_password,
+        password=get_password_hash(staff_data.password),
         name=staff_data.name,
         role="staff",
         is_approved=True
     )
-    
     db.add(new_staff)
     db.commit()
     db.refresh(new_staff)
-    
     return new_staff
 
 @app.delete("/api/admin/users/{user_id}")
-async def delete_user(
-    user_id: int,
-    admin: models.User = Depends(get_admin_user),
-    db: Session = Depends(get_db)
-):
-    """사용자 삭제"""
+async def delete_user(user_id: int, admin: models.User = Depends(get_admin_user), db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
-    
     if user.role == "admin":
         raise HTTPException(status_code=403, detail="관리자는 삭제할 수 없습니다")
-    
     db.delete(user)
     db.commit()
-    
     return {"message": "사용자가 삭제되었습니다"}
 
 # ==================== 채팅방 API ====================
 
 @app.get("/api/rooms/free", response_model=List[schemas.RoomResponse])
 async def get_free_rooms(db: Session = Depends(get_db)):
-    """무료 채팅방 목록 (로그인 불필요)"""
-    rooms = db.query(models.Room).filter(models.Room.is_free == True).all()
-    return rooms
+    return db.query(models.Room).filter(models.Room.is_free == True).all()
 
 @app.get("/api/rooms/paid", response_model=List[schemas.RoomResponse])
-async def get_paid_rooms(
-    current_user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """유료 채팅방 목록 (로그인 필요)"""
-    rooms = db.query(models.Room).filter(models.Room.is_free == False).all()
-    return rooms
+async def get_paid_rooms(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return db.query(models.Room).filter(models.Room.is_free == False).all()
 
 @app.post("/api/rooms", response_model=schemas.RoomResponse)
-async def create_room(
-    room_data: schemas.RoomCreate,
-    admin: models.User = Depends(get_admin_user),
-    db: Session = Depends(get_db)
-):
-    """채팅방 생성"""
+async def create_room(room_data: schemas.RoomCreate, admin: models.User = Depends(get_admin_user), db: Session = Depends(get_db)):
     new_room = models.Room(**room_data.dict())
     db.add(new_room)
     db.commit()
@@ -351,9 +275,9 @@ async def create_room(
 async def get_room_messages(
     room_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[models.User] = Depends(lambda token=Depends(oauth2_scheme): get_current_user_optional(token, db))
+    current_user: Optional[models.User] = Depends(get_current_user_optional)
 ):
-    """채팅방 메시지 조회 (무료방은 로그인 불필요)"""
+    """채팅방 메시지 조회"""
     room = db.query(models.Room).filter(models.Room.id == room_id).first()
     if not room:
         raise HTTPException(status_code=404, detail="채팅방을 찾을 수 없습니다")
@@ -362,38 +286,17 @@ async def get_room_messages(
     if not room.is_free and not current_user:
         raise HTTPException(status_code=401, detail="로그인이 필요합니다")
     
-    # 최근 30개 메시지만 로딩 (속도 개선)
     messages = db.query(models.Message).filter(
         models.Message.room_id == room_id
-    ).order_by(models.Message.created_at.desc()).limit(30).all()
+    ).order_by(models.Message.created_at.desc()).limit(50).all()
     
-    return messages[::-1]  # 오래된 순서로
-
-async def get_current_user_optional(token: Optional[str], db: Session):
-    """선택적 사용자 인증 (없어도 됨)"""
-    if not token:
-        return None
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: int = payload.get("sub")
-        if user_id is None:
-            return None
-        user = db.query(models.User).filter(models.User.id == user_id).first()
-        return user if user and user.is_approved else None
-    except:
-        return None
+    return messages[::-1]
 
 # ==================== 메시지 삭제 API ====================
 
 @app.delete("/api/messages/{message_id}")
-async def delete_message(
-    message_id: int,
-    current_user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """메시지 삭제 (관리자/서브관리자만 가능)"""
-    # 관리자 또는 서브관리자만 삭제 가능
-    if current_user.role not in ["admin", "subadmin"]:
+async def delete_message(message_id: int, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if current_user.role not in ["admin", "subadmin", "staff"]:
         raise HTTPException(status_code=403, detail="메시지 삭제 권한이 없습니다")
     
     message = db.query(models.Message).filter(models.Message.id == message_id).first()
@@ -402,89 +305,56 @@ async def delete_message(
     
     db.delete(message)
     db.commit()
-    
-    return {"message": "메시지가 삭제되었습니다", "deleted_id": message_id}
+    return {"message": "삭제되었습니다", "deleted_id": message_id}
 
 # ==================== 파일 업로드 API ====================
 
 @app.post("/api/upload/image")
-async def upload_image(
-    file: UploadFile = File(...),
-    current_user: models.User = Depends(get_current_user)
-):
-    """이미지 업로드"""
-    # 파일 확장자 확인
-    allowed_extensions = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
-    file_ext = os.path.splitext(file.filename)[1].lower()
+async def upload_image(file: UploadFile = File(...), current_user: models.User = Depends(get_current_user)):
+    allowed = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+    ext = os.path.splitext(file.filename)[1].lower()
     
-    if file_ext not in allowed_extensions:
+    if ext not in allowed:
         raise HTTPException(status_code=400, detail="지원하지 않는 이미지 형식입니다")
     
-    # 파일 크기 제한 (5MB)
     contents = await file.read()
     if len(contents) > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="파일 크기는 5MB 이하여야 합니다")
     
-    # 고유 파일명 생성
-    unique_filename = f"{uuid.uuid4()}{file_ext}"
-    file_path = UPLOAD_DIR / unique_filename
+    filename = f"{uuid.uuid4()}{ext}"
+    filepath = UPLOAD_DIR / filename
     
-    # 파일 저장
-    with open(file_path, "wb") as f:
+    with open(filepath, "wb") as f:
         f.write(contents)
     
-    # URL 반환
-    file_url = f"/uploads/{unique_filename}"
-    
-    return {
-        "url": file_url,
-        "filename": file.filename,
-        "type": "image"
-    }
+    return {"url": f"/uploads/{filename}", "filename": file.filename, "type": "image"}
 
 @app.post("/api/upload/file")
-async def upload_file(
-    file: UploadFile = File(...),
-    current_user: models.User = Depends(get_current_user)
-):
-    """파일 업로드"""
-    # 파일 확장자 확인
-    allowed_extensions = {".pdf", ".doc", ".docx", ".xls", ".xlsx", ".txt", ".zip"}
-    file_ext = os.path.splitext(file.filename)[1].lower()
+async def upload_file(file: UploadFile = File(...), current_user: models.User = Depends(get_current_user)):
+    allowed = {".pdf", ".doc", ".docx", ".xls", ".xlsx", ".txt", ".zip"}
+    ext = os.path.splitext(file.filename)[1].lower()
     
-    if file_ext not in allowed_extensions:
+    if ext not in allowed:
         raise HTTPException(status_code=400, detail="지원하지 않는 파일 형식입니다")
     
-    # 파일 크기 제한 (10MB)
     contents = await file.read()
     if len(contents) > 10 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="파일 크기는 10MB 이하여야 합니다")
     
-    # 고유 파일명 생성
-    unique_filename = f"{uuid.uuid4()}{file_ext}"
-    file_path = UPLOAD_DIR / unique_filename
+    filename = f"{uuid.uuid4()}{ext}"
+    filepath = UPLOAD_DIR / filename
     
-    # 파일 저장
-    with open(file_path, "wb") as f:
+    with open(filepath, "wb") as f:
         f.write(contents)
     
-    # URL 반환
-    file_url = f"/uploads/{unique_filename}"
-    
-    return {
-        "url": file_url,
-        "filename": file.filename,
-        "type": "file"
-    }
+    return {"url": f"/uploads/{filename}", "filename": file.filename, "type": "file"}
 
 # ==================== WebSocket ====================
 
 @app.websocket("/ws/chat/{room_id}")
 async def websocket_chat(websocket: WebSocket, room_id: int, token: str):
     """채팅 WebSocket"""
-    # WebSocket에서는 Depends가 제대로 작동하지 않으므로 수동으로 세션 생성
     db = SessionLocal()
-    
     user_id = None
     user = None
     
@@ -505,7 +375,7 @@ async def websocket_chat(websocket: WebSocket, room_id: int, token: str):
         
         await manager.connect(websocket, str(room_id), user_id)
         
-        # 접속 알림
+        # 입장 알림
         await manager.send_message({
             "type": "system",
             "message": f"{user.name}님이 입장하셨습니다.",
@@ -515,7 +385,7 @@ async def websocket_chat(websocket: WebSocket, room_id: int, token: str):
         while True:
             data = await websocket.receive_json()
             
-            # 일반 회원은 메시지 전송 불가 (관리자/서브관리자/직원만 가능)
+            # 일반 회원은 메시지 전송 불가
             if user.role == "member":
                 await websocket.send_json({
                     "type": "error",
@@ -534,7 +404,7 @@ async def websocket_chat(websocket: WebSocket, room_id: int, token: str):
             db.commit()
             db.refresh(message)
             
-            # 메시지 브로드캐스트
+            # 브로드캐스트
             await manager.send_message({
                 "type": "message",
                 "id": message.id,
@@ -564,30 +434,18 @@ async def websocket_chat(websocket: WebSocket, room_id: int, token: str):
     finally:
         db.close()
 
-# ==================== MT4 연동 API ====================
+# ==================== MT4 API ====================
 
 @app.post("/api/mt4/position")
-async def receive_mt4_position(
-    position_data: schemas.MT4Position,
-    api_key: str,  # MT4에서 보내는 API 키
-    db: Session = Depends(get_db)
-):
-    """MT4 포지션 수신"""
-    # API 키 검증 (실제 환경에서는 DB에 저장된 키와 비교)
+async def receive_mt4_position(position_data: schemas.MT4Position, api_key: str, db: Session = Depends(get_db)):
     if api_key != "your-mt4-api-key":
         raise HTTPException(status_code=403, detail="Invalid API key")
     
-    # 해외선물 채팅방 찾기
-    room = db.query(models.Room).filter(
-        models.Room.room_type == "futures"
-    ).first()
-    
+    room = db.query(models.Room).filter(models.Room.room_type == "futures").first()
     if not room:
         raise HTTPException(status_code=404, detail="해외선물 채팅방을 찾을 수 없습니다")
     
-    # 메시지 생성
-    message_content = f"""
-🔔 포지션 알림
+    content = f"""🔔 포지션 알림
 
 상품: {position_data.symbol}
 타입: {"매수" if position_data.type == "BUY" else "매도"}
@@ -595,78 +453,71 @@ async def receive_mt4_position(
 진입가: {position_data.open_price}
 손절가: {position_data.sl}
 목표가: {position_data.tp}
-시간: {position_data.open_time}
-    """.strip()
+시간: {position_data.open_time}"""
     
-    # 시스템 메시지로 저장
     message = models.Message(
         room_id=room.id,
-        user_id=1,  # 시스템 사용자
-        content=message_content,
+        user_id=1,
+        content=content,
         message_type="signal"
     )
     db.add(message)
     db.commit()
     
-    # WebSocket으로 전송
     await manager.send_message({
         "type": "signal",
-        "content": message_content,
+        "content": content,
         "timestamp": datetime.utcnow().isoformat()
     }, str(room.id))
     
     return {"message": "포지션이 전송되었습니다"}
 
-# ==================== 뉴스 크롤링 API ====================
+# ==================== 뉴스 API ====================
 
 @app.get("/api/news/{category}")
-async def get_news(
-    category: str,  # stock, futures, crypto
-    current_user: models.User = Depends(get_current_user)
-):
-    """뉴스 크롤링"""
+async def get_news(category: str, current_user: models.User = Depends(get_current_user)):
     from news_crawler import crawl_news
-    
     try:
         news_list = await crawl_news(category)
         return {"news": news_list}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ==================== 초기 데이터 생성 ====================
+# ==================== 서버 시작 ====================
 
 @app.on_event("startup")
 async def startup_event():
-    """서버 시작 시 기본 데이터 생성"""
-    db = next(get_db())
-    
-    # 관리자 계정 생성 (없으면)
-    admin = db.query(models.User).filter(models.User.phone == "010-0000-0000").first()
-    if not admin:
-        admin = models.User(
-            phone="010-0000-0000",
-            password=get_password_hash("admin1234"),
-            name="일타훈장님",
-            role="admin",
-            is_approved=True
-        )
-        db.add(admin)
-        db.commit()
-    
-    # 기본 채팅방 생성
-    rooms = db.query(models.Room).all()
-    if not rooms:
-        default_rooms = [
-            models.Room(name="무료 공지방", room_type="notice", is_free=True, description="누구나 볼 수 있는 공지방"),
-            models.Room(name="주식 리딩방", room_type="stock", is_free=False, description="주식 매매 시그널"),
-            models.Room(name="해외선물 리딩방", room_type="futures", is_free=False, description="해외선물 매매 시그널"),
-            models.Room(name="코인선물 리딩방", room_type="crypto", is_free=False, description="코인선물 매매 시그널"),
-        ]
-        db.add_all(default_rooms)
-        db.commit()
-    
-    print("✅ 서버 시작 완료!")
-    print("📌 관리자 계정: 010-0000-0000 / admin1234")
+    db = SessionLocal()
+    try:
+        # 관리자 계정 생성
+        admin = db.query(models.User).filter(models.User.phone == "010-0000-0000").first()
+        if not admin:
+            admin = models.User(
+                phone="010-0000-0000",
+                password=get_password_hash("admin1234"),
+                name="일타훈장님",
+                role="admin",
+                is_approved=True
+            )
+            db.add(admin)
+            db.commit()
+        
+        # 기본 채팅방 생성
+        rooms = db.query(models.Room).all()
+        if not rooms:
+            default_rooms = [
+                models.Room(name="투자학당!! 일타훈장님!!", room_type="notice", is_free=True, description="누구나 볼 수 있는 공지방"),
+                models.Room(name="주식 리딩방", room_type="stock", is_free=False, description="주식 매매 시그널"),
+                models.Room(name="해외선물 리딩방", room_type="futures", is_free=False, description="해외선물 매매 시그널"),
+                models.Room(name="코인선물 리딩방", room_type="crypto", is_free=False, description="코인선물 매매 시그널"),
+            ]
+            db.add_all(default_rooms)
+            db.commit()
+        
+        print("✅ 서버 시작 완료!")
+        print("📌 관리자: 010-0000-0000 / admin1234")
+    finally:
+        db.close()
 
 if __name__ == "__main__":
     import uvicorn
