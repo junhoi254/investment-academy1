@@ -40,11 +40,28 @@ function ChatRoom({ user, onLogin, onLogout }) {
     // 세션 스토리지에서 면책조항 확인 여부 가져오기
     return sessionStorage.getItem('disclaimerAccepted') === 'true';
   });
+  const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
+
+  // 모바일 뷰포트 높이 계산 (주소창 등 고려)
+  useEffect(() => {
+    const updateHeight = () => {
+      setViewportHeight(window.innerHeight);
+    };
+    
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+    window.addEventListener('orientationchange', updateHeight);
+    
+    return () => {
+      window.removeEventListener('resize', updateHeight);
+      window.removeEventListener('orientationchange', updateHeight);
+    };
+  }, []);
 
   // 면책조항 수락 시 세션 스토리지에 저장
   useEffect(() => {
@@ -583,7 +600,7 @@ function ChatRoom({ user, onLogin, onLogout }) {
   };
 
   return (
-    <div className="chatroom-container">
+    <div className="chatroom-container" style={{ height: `${viewportHeight}px` }}>
       <header className="chatroom-header">
         <button className="back-button" onClick={() => navigate('/chat')}>
           ← 뒤로
