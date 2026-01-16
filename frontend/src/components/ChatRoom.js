@@ -43,6 +43,8 @@ function ChatRoom({ user, onLogin, onLogout }) {
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
+  const wsRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
 
   // 면책조항 수락 시 세션 스토리지에 저장
   useEffect(() => {
@@ -61,11 +63,29 @@ function ChatRoom({ user, onLogin, onLogout }) {
     }
 
     return () => {
-      if (ws) {
-        ws.close();
+      // cleanup: WebSocket 연결 종료
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (wsRef.current) {
+        wsRef.current.onclose = null; // 재연결 방지
+        wsRef.current.close();
+        wsRef.current = null;
       }
     };
-  }, [roomId, user]);
+  }, [roomId]);
+
+  // user 변경 시 WebSocket 연결/해제
+  useEffect(() => {
+    if (user && !wsRef.current) {
+      connectWebSocket();
+    } else if (!user && wsRef.current) {
+      wsRef.current.onclose = null;
+      wsRef.current.close();
+      wsRef.current = null;
+      setConnected(false);
+    }
+  }, [user]);
 
   useEffect(() => {
     scrollToBottom();
@@ -115,6 +135,11 @@ function ChatRoom({ user, onLogin, onLogout }) {
   const connectWebSocket = () => {
     if (!user) return;
     
+    // 이미 연결되어 있으면 새로 연결하지 않음
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      return;
+    }
+    
     const token = localStorage.getItem('token');
     const websocket = new WebSocket(`${WS_URL}/ws/chat/${roomId}?token=${token}`);
 
@@ -158,16 +183,20 @@ function ChatRoom({ user, onLogin, onLogout }) {
             role: 'system'
           }
         }]);
+      } else if (data.type === 'delete') {
+        // 메시지 삭제 처리
+        setMessages(prev => prev.filter(msg => msg.id !== data.message_id));
       }
     };
 
     websocket.onclose = () => {
       console.log('WebSocket 연결 종료');
       setConnected(false);
+      wsRef.current = null;
       
-      // 재연결 시도
+      // 재연결 시도 (컴포넌트가 마운트되어 있을 때만)
       if (user) {
-        setTimeout(() => {
+        reconnectTimeoutRef.current = setTimeout(() => {
           connectWebSocket();
         }, 3000);
       }
@@ -177,6 +206,7 @@ function ChatRoom({ user, onLogin, onLogout }) {
       console.error('WebSocket 오류:', error);
     };
 
+    wsRef.current = websocket;
     setWs(websocket);
   };
 

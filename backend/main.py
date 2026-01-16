@@ -303,8 +303,16 @@ async def delete_message(message_id: int, current_user: models.User = Depends(ge
     if not message:
         raise HTTPException(status_code=404, detail="메시지를 찾을 수 없습니다")
     
+    room_id = message.room_id
     db.delete(message)
     db.commit()
+    
+    # WebSocket으로 삭제 이벤트 브로드캐스트
+    await manager.send_message({
+        "type": "delete",
+        "message_id": message_id
+    }, str(room_id))
+    
     return {"message": "삭제되었습니다", "deleted_id": message_id}
 
 # ==================== 파일 업로드 API ====================
