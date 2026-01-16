@@ -23,18 +23,18 @@
 }
 
 .back-button {
-  background: #667eea;
-  color: white;
-  padding: 8px 16px;
-  font-size: 14px;
-  border: none;
-  border-radius: 8px;
+  background: #000000;
+  color: #ffffff;
+  padding: 8px 14px;
+  font-size: 13px;
+  border: 1px solid #ffffff;
+  border-radius: 20px;
   cursor: pointer;
   flex-shrink: 0;
 }
 
 .back-button:hover {
-  background: #5a6fd6;
+  background: #1a1a1a;
 }
 
 .room-title {
@@ -89,39 +89,41 @@
 }
 
 .search-toggle-btn {
-  background: transparent;
-  border: none;
-  font-size: 20px;
+  background: #000000;
+  border: 1px solid #ffffff;
+  border-radius: 20px;
+  font-size: 16px;
   cursor: pointer;
-  padding: 5px 8px;
+  padding: 8px 14px;
+  color: #ffffff;
 }
 
 .logout-button {
-  background: #667eea;
-  color: white;
-  padding: 8px 16px;
-  border: none;
-  border-radius: 8px;
+  background: #000000;
+  color: #ffffff;
+  padding: 8px 14px;
+  border: 1px solid #ffffff;
+  border-radius: 20px;
   cursor: pointer;
   font-size: 13px;
 }
 
 .logout-button:hover {
-  background: #5a6fd6;
+  background: #1a1a1a;
 }
 
 .login-button {
-  background: #667eea;
-  color: white;
-  padding: 8px 16px;
-  border: none;
-  border-radius: 8px;
+  background: #000000;
+  color: #ffffff;
+  padding: 8px 14px;
+  border: 1px solid #ffffff;
+  border-radius: 20px;
   cursor: pointer;
   font-size: 13px;
 }
 
 .login-button:hover {
-  background: #5a6fd6;
+  background: #1a1a1a;
 }
 
 /* ========== 메시지 영역 ========== */
@@ -1039,7 +1041,7 @@
   
   .back-button {
     padding: 6px 12px;
-    font-size: 13px;
+    font-size: 12px;
   }
   
   .room-title h2 {
@@ -1047,8 +1049,8 @@
   }
   
   .search-toggle-btn {
-    font-size: 18px;
-    padding: 5px;
+    font-size: 14px;
+    padding: 6px 12px;
   }
   
   .logout-button, .login-button {
@@ -1155,11 +1157,16 @@
 @media (max-width: 380px) {
   .back-button {
     padding: 5px 10px;
-    font-size: 12px;
+    font-size: 11px;
   }
   
   .room-title h2 {
     font-size: 13px;
+  }
+  
+  .search-toggle-btn {
+    font-size: 12px;
+    padding: 5px 10px;
   }
   
   .logout-button, .login-button {
