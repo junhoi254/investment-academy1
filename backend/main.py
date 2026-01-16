@@ -472,6 +472,47 @@ async def receive_mt4_position(position_data: schemas.MT4Position, api_key: str,
     
     return {"message": "포지션이 전송되었습니다"}
 
+# ==================== URL 미리보기 API ====================
+
+@app.get("/api/link-preview")
+async def get_link_preview(url: str):
+    """URL의 OG 메타데이터 가져오기"""
+    import aiohttp
+    from bs4 import BeautifulSoup
+    
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=headers, timeout=5) as response:
+                if response.status != 200:
+                    return {"url": url, "title": "", "description": "", "image": ""}
+                
+                html = await response.text()
+                soup = BeautifulSoup(html, 'html.parser')
+                
+                # OG 태그 추출
+                og_title = soup.find('meta', property='og:title')
+                og_desc = soup.find('meta', property='og:description')
+                og_image = soup.find('meta', property='og:image')
+                
+                # 일반 태그 fallback
+                title = og_title['content'] if og_title else (soup.title.string if soup.title else url)
+                description = og_desc['content'] if og_desc else ""
+                image = og_image['content'] if og_image else ""
+                
+                return {
+                    "url": url,
+                    "title": title[:100] if title else "",
+                    "description": description[:200] if description else "",
+                    "image": image
+                }
+    except Exception as e:
+        print(f"Link preview error: {e}")
+        return {"url": url, "title": "", "description": "", "image": ""}
+
 # ==================== 뉴스 API ====================
 
 @app.get("/api/news/{category}")

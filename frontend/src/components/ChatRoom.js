@@ -344,6 +344,56 @@ function ChatRoom({ user, onLogin, onLogout }) {
     return { text, urls };
   };
 
+  // 링크 미리보기 컴포넌트
+  const LinkPreviewCard = ({ url }) => {
+    const [preview, setPreview] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+      const fetchPreview = async () => {
+        try {
+          const response = await axios.get(`${API_URL}/api/link-preview?url=${encodeURIComponent(url)}`);
+          setPreview(response.data);
+        } catch (error) {
+          console.error('미리보기 로딩 실패:', error);
+          setPreview({ url, title: new URL(url).hostname, description: '', image: '' });
+        }
+        setLoading(false);
+      };
+      fetchPreview();
+    }, [url]);
+
+    if (loading) {
+      return (
+        <div className="link-preview loading">
+          <div className="link-card">
+            <div className="link-icon">⏳</div>
+            <div className="link-info">
+              <div className="link-title">로딩 중...</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (!preview) return null;
+
+    return (
+      <div className="link-preview">
+        <a href={url} target="_blank" rel="noopener noreferrer" className="link-card">
+          {preview.image && (
+            <img src={preview.image} alt="" className="link-thumbnail" onError={(e) => e.target.style.display = 'none'} />
+          )}
+          <div className="link-info">
+            <div className="link-title">{preview.title || new URL(url).hostname}</div>
+            {preview.description && <div className="link-description">{preview.description}</div>}
+            <div className="link-url">{new URL(url).hostname}</div>
+          </div>
+        </a>
+      </div>
+    );
+  };
+
   const renderLinkPreview = (url) => {
     // 유튜브 감지
     const youtubeRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/;
@@ -367,17 +417,7 @@ function ChatRoom({ user, onLogin, onLogout }) {
     }
     
     // 일반 링크 미리보기
-    return (
-      <div className="link-preview">
-        <a href={url} target="_blank" rel="noopener noreferrer" className="link-card">
-          <div className="link-icon">🔗</div>
-          <div className="link-info">
-            <div className="link-title">{new URL(url).hostname}</div>
-            <div className="link-url">{url}</div>
-          </div>
-        </a>
-      </div>
-    );
+    return <LinkPreviewCard url={url} />;
   };
 
   const renderMessage = (message) => {
