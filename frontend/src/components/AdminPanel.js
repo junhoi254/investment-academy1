@@ -268,7 +268,7 @@ function AdminPanel({ user, onLogout }) {
                       </td>
                       <td>{getRoleName(u.role)}</td>
                       <td>{u.room_id || '-'}번 방</td>
-                      <td>{u.connected_at ? new Date(u.connected_at).toLocaleTimeString('ko-KR') : '-'}</td>
+                      <td>{u.connected_at ? new Date(u.connected_at + 'Z').toLocaleTimeString('ko-KR') : '-'}</td>
                     </tr>
                   ))}
                 </tbody>
