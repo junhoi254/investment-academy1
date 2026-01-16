@@ -53,7 +53,7 @@ function ChatList({ user, onLogout }) {
   };
 
   const handleThreadBoardClick = () => {
-    if (!user || !user.is_approved) {
+    if (!user || !(user.is_approved || user.role === 'admin' || user.role === 'staff')) {
       alert('승인된 회원만 이용할 수 있습니다.');
       return;
     }
@@ -149,8 +149,8 @@ function ChatList({ user, onLogout }) {
           </div>
         </section>
 
-        {/* 훈장님 한마디 - 승인된 회원만 */}
-        {user && user.is_approved && (
+        {/* 훈장님 한마디 - 승인된 회원 + 관리자/스태프 */}
+        {user && (user.is_approved || user.role === 'admin' || user.role === 'staff') && (
           <section className="room-section">
             <h2>💬 훈장님 한마디</h2>
             <p className="section-description">중요 공지사항 및 정보 (회원 댓글 작성 가능)</p>

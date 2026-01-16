@@ -16,8 +16,8 @@ function ThreadView({ user }) {
   const [showComments, setShowComments] = useState(false);
 
   useEffect(() => {
-    // 승인된 회원만 접근 가능
-    if (!user || !user.is_approved) {
+    // 승인된 회원 + 관리자/스태프만 접근 가능
+    if (!user || !(user.is_approved || user.role === 'admin' || user.role === 'staff')) {
       alert('승인된 회원만 이용할 수 있습니다.');
       navigate('/chat');
       return;

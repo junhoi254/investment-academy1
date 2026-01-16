@@ -775,9 +775,9 @@ async def create_thread_comment(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """쓰레드 댓글 작성 (승인된 회원만)"""
-    # 승인된 사용자인지 확인
-    if not current_user.is_approved:
+    """쓰레드 댓글 작성 (승인된 회원 + 관리자/스태프)"""
+    # 승인된 사용자 또는 관리자/스태프인지 확인
+    if not current_user.is_approved and current_user.role not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="승인된 회원만 댓글을 작성할 수 있습니다")
     
     # 쓰레드 존재 여부 확인
