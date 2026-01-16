@@ -9,6 +9,10 @@ function ThreadList({ user }) {
   const navigate = useNavigate();
   const [threads, setThreads] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [expandedThread, setExpandedThread] = useState(null);
+  const [comments, setComments] = useState({});
+  const [newComment, setNewComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     // 승인된 회원 + 관리자/스태프만 접근 가능
@@ -25,22 +29,86 @@ function ThreadList({ user }) {
       const response = await axios.get(`${API_URL}/api/threads`);
       // 최신글이 맨 위에 오도록 (고정글 우선, 그 다음 최신순)
       const sortedThreads = response.data.sort((a, b) => {
-        // 고정글 우선
         if (a.is_pinned && !b.is_pinned) return -1;
         if (!a.is_pinned && b.is_pinned) return 1;
-        // 같은 카테고리면 최신순
         return new Date(b.created_at) - new Date(a.created_at);
       });
       setThreads(sortedThreads);
     } catch (error) {
-      console.error('쓰레드 로딩 실패:', error);
+      console.error('로딩 실패:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleThreadClick = (threadId) => {
-    navigate(`/thread/${threadId}`);
+  const loadComments = async (threadId) => {
+    try {
+      const response = await axios.get(`${API_URL}/api/threads/${threadId}/comments`);
+      setComments(prev => ({ ...prev, [threadId]: response.data }));
+    } catch (error) {
+      console.error('댓글 로딩 실패:', error);
+    }
+  };
+
+  const toggleThread = async (threadId) => {
+    if (expandedThread === threadId) {
+      setExpandedThread(null);
+    } else {
+      setExpandedThread(threadId);
+      if (!comments[threadId]) {
+        loadComments(threadId);
+      }
+      // 조회수 증가
+      try {
+        await axios.get(`${API_URL}/api/threads/${threadId}`);
+      } catch (e) {}
+    }
+  };
+
+  const submitComment = async (threadId) => {
+    if (!newComment.trim()) return;
+    
+    setSubmitting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `${API_URL}/api/threads/${threadId}/comments`,
+        { content: newComment },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setComments(prev => ({
+        ...prev,
+        [threadId]: [...(prev[threadId] || []), response.data]
+      }));
+      setNewComment('');
+      // 댓글 수 업데이트
+      setThreads(prev => prev.map(t => 
+        t.id === threadId ? { ...t, comment_count: (t.comment_count || 0) + 1 } : t
+      ));
+    } catch (error) {
+      alert(error.response?.data?.detail || '댓글 작성에 실패했습니다.');
+    }
+    setSubmitting(false);
+  };
+
+  const deleteComment = async (commentId, threadId) => {
+    if (!window.confirm('댓글을 삭제하시겠습니까?')) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_URL}/api/threads/comments/${commentId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setComments(prev => ({
+        ...prev,
+        [threadId]: prev[threadId].filter(c => c.id !== commentId)
+      }));
+      setThreads(prev => prev.map(t => 
+        t.id === threadId ? { ...t, comment_count: Math.max((t.comment_count || 1) - 1, 0) } : t
+      ));
+    } catch (error) {
+      alert('댓글 삭제에 실패했습니다.');
+    }
   };
 
   const formatDate = (dateString) => {
@@ -48,20 +116,83 @@ function ThreadList({ user }) {
     const now = new Date();
     const diff = now - date;
     
-    // 24시간 이내면 시간으로 표시
-    if (diff < 24 * 60 * 60 * 1000) {
-      const hours = Math.floor(diff / (60 * 60 * 1000));
-      if (hours === 0) {
-        const minutes = Math.floor(diff / (60 * 1000));
-        return minutes <= 0 ? '방금 전' : `${minutes}분 전`;
-      }
-      return `${hours}시간 전`;
-    }
+    if (diff < 60 * 1000) return '방금 전';
+    if (diff < 60 * 60 * 1000) return `${Math.floor(diff / (60 * 1000))}분 전`;
+    if (diff < 24 * 60 * 60 * 1000) return `${Math.floor(diff / (60 * 60 * 1000))}시간 전`;
     
-    // 그 외에는 날짜로 표시
-    return date.toLocaleDateString('ko-KR', {
-      month: 'long',
-      day: 'numeric'
+    return date.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
+  };
+
+  const getRoleBadge = (role) => {
+    const badges = {
+      admin: { text: '일타훈장님', class: 'admin' },
+      staff: { text: '서브관리자', class: 'staff' },
+      member: { text: '회원', class: 'member' }
+    };
+    return badges[role] || { text: '회원', class: 'member' };
+  };
+
+  // 유튜브 URL에서 비디오 ID 추출
+  const getYoutubeVideoId = (url) => {
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\s?]+)/,
+      /youtube\.com\/shorts\/([^&\s?]+)/
+    ];
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) return match[1];
+    }
+    return null;
+  };
+
+  // 내용 렌더링 (유튜브 임베드 + 링크)
+  const renderContent = (content) => {
+    if (!content) return null;
+    
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const lines = content.split('\n');
+    
+    return lines.map((line, lineIndex) => {
+      const parts = line.split(urlRegex);
+      
+      return (
+        <div key={lineIndex} className="content-line">
+          {parts.map((part, partIndex) => {
+            if (urlRegex.test(part)) {
+              const cleanUrl = part.replace(/[.,!?;:]+$/, '');
+              const youtubeId = getYoutubeVideoId(cleanUrl);
+              
+              if (youtubeId) {
+                return (
+                  <div key={partIndex} className="youtube-embed">
+                    <iframe
+                      src={`https://www.youtube.com/embed/${youtubeId}`}
+                      title="YouTube video"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                );
+              }
+              
+              return (
+                <a 
+                  key={partIndex}
+                  href={cleanUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="content-link"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {cleanUrl}
+                </a>
+              );
+            }
+            return part || null;
+          })}
+        </div>
+      );
     });
   };
 
@@ -86,17 +217,14 @@ function ThreadList({ user }) {
       <div className="thread-list-content">
         {threads.length === 0 ? (
           <div className="no-threads">
-            <p>📭 등록된 게시글이 없습니다.</p>
+            <p>📭 등록된 글이 없습니다.</p>
           </div>
         ) : (
           <div className="threads">
             {threads.map(thread => (
-              <div 
-                key={thread.id} 
-                className={`thread-item ${thread.is_pinned ? 'pinned' : ''}`}
-                onClick={() => handleThreadClick(thread.id)}
-              >
-                <div className="thread-main">
+              <div key={thread.id} className={`thread-item ${thread.is_pinned ? 'pinned' : ''}`}>
+                {/* 헤더 (클릭해서 접기/펼치기) */}
+                <div className="thread-header" onClick={() => toggleThread(thread.id)}>
                   <div className="thread-title-row">
                     {thread.is_pinned && <span className="pin-icon">📌</span>}
                     <h3 className="thread-title">{thread.title}</h3>
@@ -104,18 +232,73 @@ function ThreadList({ user }) {
                   <div className="thread-meta">
                     <span className="thread-author">{thread.author?.name}</span>
                     <span className="thread-date">{formatDate(thread.created_at)}</span>
+                    <span className="thread-stats-inline">
+                      💬 {thread.comment_count || 0} · 👁 {thread.view_count || 0}
+                    </span>
                   </div>
                 </div>
-                <div className="thread-stats">
-                  <div className="stat-item">
-                    <span className="stat-icon">💬</span>
-                    <span className="stat-value">{thread.comment_count || 0}</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-icon">👁</span>
-                    <span className="stat-value">{thread.view_count || 0}</span>
-                  </div>
+
+                {/* 내용 (항상 표시) */}
+                <div className="thread-content">
+                  {renderContent(thread.content)}
                 </div>
+
+                {/* 댓글 토글 버튼 */}
+                <button 
+                  className={`comments-toggle ${expandedThread === thread.id ? 'active' : ''}`}
+                  onClick={() => toggleThread(thread.id)}
+                >
+                  💬 댓글 {thread.comment_count || 0}개 {expandedThread === thread.id ? '접기 ▲' : '보기 ▼'}
+                </button>
+
+                {/* 댓글 섹션 */}
+                {expandedThread === thread.id && (
+                  <div className="comments-section">
+                    {/* 댓글 목록 */}
+                    {comments[thread.id]?.length > 0 && (
+                      <div className="comments-list">
+                        {comments[thread.id].map(comment => (
+                          <div key={comment.id} className="comment-item">
+                            <div className="comment-header">
+                              <span className="comment-author">{comment.user?.name}</span>
+                              <span className={`role-badge ${getRoleBadge(comment.user?.role).class}`}>
+                                {getRoleBadge(comment.user?.role).text}
+                              </span>
+                              <span className="comment-date">{formatDate(comment.created_at)}</span>
+                              {user && (user.id === comment.user_id || user.role === 'admin') && (
+                                <button 
+                                  className="delete-btn"
+                                  onClick={() => deleteComment(comment.id, thread.id)}
+                                >
+                                  🗑️
+                                </button>
+                              )}
+                            </div>
+                            <div className="comment-content">{comment.content}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* 댓글 입력 */}
+                    <div className="comment-form">
+                      <input
+                        type="text"
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        placeholder="댓글을 입력하세요..."
+                        onKeyPress={(e) => e.key === 'Enter' && submitComment(thread.id)}
+                        disabled={submitting}
+                      />
+                      <button 
+                        onClick={() => submitComment(thread.id)}
+                        disabled={submitting || !newComment.trim()}
+                      >
+                        {submitting ? '...' : '등록'}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

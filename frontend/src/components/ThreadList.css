@@ -45,41 +45,27 @@
   color: #888;
 }
 
-.no-threads p {
-  font-size: 16px;
-}
-
 .threads {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 15px;
 }
 
 .thread-item {
   background: white;
-  padding: 16px 20px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.thread-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
 }
 
 .thread-item.pinned {
-  background: linear-gradient(135deg, #fff9e6 0%, #fff5d6 100%);
-  border-left: 4px solid #ffc107;
+  background: linear-gradient(135deg, #fffef5 0%, #fff9e6 100%);
+  border: 2px solid #ffc107;
 }
 
-.thread-main {
-  flex: 1;
-  min-width: 0;
+.thread-header {
+  padding: 18px 20px 10px;
+  cursor: pointer;
 }
 
 .thread-title-row {
@@ -90,51 +76,218 @@
 }
 
 .pin-icon {
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .thread-title {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 700;
   color: #333;
   margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .thread-meta {
   display: flex;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
   font-size: 12px;
   color: #888;
+  align-items: center;
 }
 
 .thread-author {
   color: #667eea;
-  font-weight: 500;
+  font-weight: 600;
 }
 
-.thread-stats {
-  display: flex;
-  gap: 15px;
-  margin-left: 15px;
+.thread-stats-inline {
+  color: #aaa;
 }
 
-.stat-item {
+/* 내용 영역 */
+.thread-content {
+  padding: 0 20px 15px;
+  color: #333;
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.content-line {
+  margin-bottom: 8px;
+}
+
+.content-link {
+  color: #667eea;
+  text-decoration: none;
+  word-break: break-all;
+  border-bottom: 1px solid #667eea;
+}
+
+.content-link:hover {
+  background: #f0f4ff;
+}
+
+/* 유튜브 임베드 */
+.youtube-embed {
+  margin: 15px 0;
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.youtube-embed iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+}
+
+/* 댓글 토글 버튼 */
+.comments-toggle {
+  width: calc(100% - 40px);
+  margin: 0 20px 15px;
+  padding: 12px;
+  background: #f5f7fa;
+  border: none;
+  border-radius: 10px;
+  color: #667eea;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.comments-toggle:hover {
+  background: #e8ecf5;
+}
+
+.comments-toggle.active {
+  background: #667eea;
+  color: white;
+}
+
+/* 댓글 섹션 */
+.comments-section {
+  background: #f9f9f9;
+  padding: 15px 20px 20px;
+  border-top: 1px solid #eee;
+}
+
+.comments-list {
+  margin-bottom: 15px;
+}
+
+.comment-item {
+  background: white;
+  padding: 12px 15px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+.comment-header {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  color: #888;
+  gap: 8px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
 }
 
-.stat-icon {
-  font-size: 12px;
+.comment-author {
+  font-weight: 600;
+  font-size: 13px;
+  color: #333;
 }
 
-.stat-value {
-  font-weight: 500;
+.role-badge {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.role-badge.admin {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.role-badge.staff {
+  background: #28a745;
+  color: white;
+}
+
+.role-badge.member {
+  background: #e9ecef;
+  color: #666;
+}
+
+.comment-date {
+  font-size: 11px;
+  color: #aaa;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0.5;
+  padding: 0;
+  font-size: 12px;
+  margin-left: auto;
+}
+
+.delete-btn:hover {
+  opacity: 1;
+}
+
+.comment-content {
+  font-size: 14px;
+  color: #333;
+  line-height: 1.5;
+}
+
+/* 댓글 입력 폼 */
+.comment-form {
+  display: flex;
+  gap: 10px;
+}
+
+.comment-form input {
+  flex: 1;
+  padding: 12px 15px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.comment-form input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.comment-form button {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.comment-form button:hover:not(:disabled) {
+  background: #5568d3;
+}
+
+.comment-form button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
 }
 
 .loading {
@@ -143,23 +296,25 @@
   color: #666;
 }
 
-/* 모바일 스타일 */
+/* 모바일 */
 @media (max-width: 768px) {
   .thread-list-header h1 {
     font-size: 16px;
   }
   
-  .thread-item {
-    padding: 14px 16px;
+  .thread-title {
+    font-size: 15px;
   }
   
-  .thread-title {
+  .thread-content {
     font-size: 14px;
   }
   
-  .thread-stats {
+  .comment-form {
     flex-direction: column;
-    gap: 5px;
-    margin-left: 10px;
+  }
+  
+  .comment-form button {
+    width: 100%;
   }
 }
