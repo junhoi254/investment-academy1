@@ -1,17 +1,16 @@
 .chatroom-container {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  height: 100vh;
-  height: calc(var(--vh, 1vh) * 100);
   display: flex;
   flex-direction: column;
   background: #e9ecef;
 }
 
 .chatroom-header {
+  flex-shrink: 0;
   background: white;
   padding: 15px 30px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -213,6 +212,7 @@
 }
 
 .message-input-container {
+  flex-shrink: 0;
   background: white;
   padding: 20px;
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);

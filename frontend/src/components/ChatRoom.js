@@ -41,47 +41,11 @@ function ChatRoom({ user, onLogin, onLogout }) {
     return sessionStorage.getItem('disclaimerAccepted') === 'true';
   });
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
-
-  // 크롬 모바일 뷰포트 높이 계산 (주소창/하단바 고려)
-  useEffect(() => {
-    const setVH = () => {
-      // visualViewport가 있으면 더 정확한 값 사용
-      const vh = (window.visualViewport?.height || window.innerHeight) * 0.01;
-      document.documentElement.style.setProperty('--vh', `${vh}px`);
-    };
-    
-    // 즉시 실행
-    setVH();
-    
-    // 로딩 후 여러 번 재계산 (브라우저 UI가 안정화될 때까지)
-    const timers = [
-      setTimeout(setVH, 100),
-      setTimeout(setVH, 300),
-      setTimeout(setVH, 500),
-      setTimeout(setVH, 1000),
-    ];
-    
-    window.addEventListener('resize', setVH);
-    window.addEventListener('orientationchange', setVH);
-    
-    // visualViewport 이벤트 (더 정확함)
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', setVH);
-    }
-    
-    return () => {
-      timers.forEach(t => clearTimeout(t));
-      window.removeEventListener('resize', setVH);
-      window.removeEventListener('orientationchange', setVH);
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', setVH);
-      }
-    };
-  }, []);
 
   // 면책조항 수락 시 세션 스토리지에 저장
   useEffect(() => {
@@ -91,6 +55,11 @@ function ChatRoom({ user, onLogin, onLogout }) {
   }, [disclaimerAccepted]);
 
   useEffect(() => {
+    // 페이지 로드 시 body 스크롤 리셋 (크롬 모바일 문제 해결)
+    window.scrollTo(0, 0);
+    document.body.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
+    
     loadRoomInfo();
     loadMessages();
 
@@ -396,7 +365,9 @@ function ChatRoom({ user, onLogin, onLogout }) {
   };
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   };
 
   const formatTime = (timestamp) => {
@@ -648,7 +619,7 @@ function ChatRoom({ user, onLogin, onLogout }) {
         </div>
       </header>
 
-      <div className="messages-container">
+      <div className="messages-container" ref={messagesContainerRef}>
         {/* 면책조항 슬라이드 (로그인 안 한 경우) */}
         {!user && !disclaimerAccepted && (
           <div className="disclaimer-overlay">

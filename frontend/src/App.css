@@ -4,13 +4,18 @@
   box-sizing: border-box;
 }
 
-html, body, #root, .App {
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: #e9ecef;
+}
+
+#root, .App {
   height: 100%;
 }
 
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: #e9ecef;
 }
 
 .loading {
