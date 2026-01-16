@@ -304,6 +304,17 @@ async def create_room(room_data: schemas.RoomCreate, admin: models.User = Depend
     db.refresh(new_room)
     return new_room
 
+@app.get("/api/reset-admin-temp")
+async def reset_admin_temp(db: Session = Depends(get_db)):
+    """임시 관리자 비밀번호 변경 API - 사용 후 삭제할 것!"""
+    admin = db.query(models.User).filter(models.User.role == "admin").first()
+    if admin:
+        admin.phone = "010-6512-6542"
+        admin.password = get_password_hash("Rlawnsghl1!")
+        db.commit()
+        return {"message": "관리자 변경 완료!", "phone": "010-6512-6542"}
+    return {"message": "관리자를 찾을 수 없습니다"}
+
 @app.put("/api/admin/rooms/{room_id}")
 async def update_room(
     room_id: int,
@@ -908,11 +919,11 @@ async def startup_event():
     db = SessionLocal()
     try:
         # 관리자 계정 생성
-        admin = db.query(models.User).filter(models.User.phone == "010-0000-0000").first()
+        admin = db.query(models.User).filter(models.User.phone == "010-6512-6542").first()
         if not admin:
             admin = models.User(
-                phone="010-0000-0000",
-                password=get_password_hash("admin1234"),
+                phone="010-6512-6542",
+                password=get_password_hash("Rlawnsghl1!"),
                 name="일타훈장님",
                 role="admin",
                 is_approved=True
@@ -933,7 +944,7 @@ async def startup_event():
             db.commit()
         
         print("✅ 서버 시작 완료!")
-        print("📌 관리자: 010-0000-0000 / admin1234")
+        print("📌 관리자: 010-6512-6542 / Rlawnsghl1!")
     finally:
         db.close()
 
