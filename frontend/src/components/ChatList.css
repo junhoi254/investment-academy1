@@ -405,3 +405,306 @@
     gap: 10px;
   }
 }
+/* ========== 교육 섹션 ========== */
+.education-section {
+  margin-bottom: 40px;
+}
+
+.education-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 15px;
+}
+
+.education-card {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  transition: all 0.3s ease;
+}
+
+.education-card.active {
+  border-color: #667eea;
+  box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+}
+
+.education-card:hover {
+  border-color: #555;
+}
+
+.room-badge.global {
+  background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
+}
+
+.room-badge.education {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+/* 오늘의 글로벌 매매 */
+.global-trading-content {
+  margin-top: 20px;
+  background: #1a1a1a;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #333;
+}
+
+.trading-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #333;
+}
+
+.trading-header h3 {
+  color: #fff;
+  font-size: 18px;
+  margin: 0;
+}
+
+.trading-date {
+  color: #888;
+  font-size: 14px;
+}
+
+.trading-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.trading-item {
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr;
+  gap: 15px;
+  align-items: center;
+  padding: 15px;
+  background: #222;
+  border-radius: 8px;
+  border-left: 4px solid #444;
+}
+
+.trading-item.buy {
+  border-left-color: #22c55e;
+}
+
+.trading-item.sell {
+  border-left-color: #ef4444;
+}
+
+.trading-symbol {
+  display: flex;
+  flex-direction: column;
+}
+
+.symbol-name {
+  color: #fff;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.symbol-desc {
+  color: #888;
+  font-size: 12px;
+}
+
+.direction-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.direction-badge.buy {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+.direction-badge.sell {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.trading-description {
+  color: #aaa;
+  font-size: 13px;
+}
+
+.trading-disclaimer {
+  margin-top: 20px;
+  padding: 12px;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 8px;
+  color: #fbbf24;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* 기술적분석 교육 */
+.education-content {
+  margin-top: 20px;
+  background: #1a1a1a;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #333;
+}
+
+.level-buttons {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.level-btn {
+  flex: 1;
+  padding: 15px 20px;
+  background: #222;
+  border: 2px solid #333;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.level-btn:hover {
+  border-color: #555;
+  background: #2a2a2a;
+}
+
+.level-btn.active {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.level-icon {
+  font-size: 28px;
+}
+
+.level-title {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.lessons-container {
+  margin-top: 20px;
+}
+
+.lessons-container h4 {
+  color: #fff;
+  font-size: 18px;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #333;
+}
+
+.lessons-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lesson-item {
+  background: #222;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.lesson-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.lesson-header:hover {
+  background: #2a2a2a;
+}
+
+.lesson-header.active {
+  background: #2a2a2a;
+  border-bottom: 1px solid #333;
+}
+
+.lesson-number {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.lesson-info {
+  flex: 1;
+}
+
+.lesson-info h5 {
+  color: #fff;
+  font-size: 15px;
+  margin: 0 0 4px 0;
+}
+
+.lesson-info p {
+  color: #888;
+  font-size: 13px;
+  margin: 0;
+}
+
+.lesson-toggle {
+  color: #666;
+  font-size: 12px;
+}
+
+.lesson-content {
+  padding: 15px 15px 15px 62px;
+  background: #1a1a1a;
+  border-top: 1px solid #333;
+}
+
+.lesson-content p {
+  color: #ccc;
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.education-placeholder {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-size: 16px;
+}
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+  .trading-item {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  .level-buttons {
+    flex-direction: column;
+  }
+  
+  .level-btn {
+    flex-direction: row;
+    justify-content: center;
+  }
+  
+  .lesson-content {
+    padding: 15px;
+  }
+}

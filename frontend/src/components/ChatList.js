@@ -5,12 +5,65 @@ import './ChatList.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
+// 오늘의 글로벌 매매 데이터 (관리자가 수정 가능하도록 나중에 DB로 이동 가능)
+const GLOBAL_TRADING_DATA = [
+  { symbol: 'EURUSD', name: '유로/달러', direction: 'SELL', description: '저항선 근접, 하락 압력' },
+  { symbol: 'US100', name: '나스닥', direction: 'BUY', description: '기술주 강세, 상승 추세' },
+  { symbol: 'HK50', name: '항셍', direction: 'BUY', description: '중국 경기 부양 기대' },
+  { symbol: 'XAUUSD', name: '골드', direction: 'SELL', description: '달러 강세, 금 약세' },
+];
+
+// 기술적분석 교육 데이터
+const EDUCATION_DATA = {
+  beginner: {
+    title: '초급',
+    icon: '🌱',
+    lessons: [
+      { title: '캔들차트 기초', description: '양봉, 음봉의 의미와 해석법', content: '캔들차트는 시가, 고가, 저가, 종가를 한눈에 볼 수 있는 차트입니다. 양봉(상승)은 종가가 시가보다 높을 때, 음봉(하락)은 종가가 시가보다 낮을 때 형성됩니다.' },
+      { title: '지지선과 저항선', description: '가격이 멈추는 구간 찾기', content: '지지선은 가격이 하락하다 멈추는 구간, 저항선은 가격이 상승하다 멈추는 구간입니다. 이 구간들은 매매의 중요한 기준점이 됩니다.' },
+      { title: '추세선 그리기', description: '상승/하락 추세 파악하기', content: '추세선은 저점과 저점(상승추세) 또는 고점과 고점(하락추세)을 연결한 선입니다. 추세의 방향을 파악하는 기본 도구입니다.' },
+      { title: '거래량 분석', description: '거래량과 가격의 관계', content: '거래량은 시장의 관심도를 나타냅니다. 가격 상승 + 거래량 증가는 강한 상승 신호, 가격 상승 + 거래량 감소는 약한 상승입니다.' },
+      { title: '손절과 익절', description: '리스크 관리의 기초', content: '손절은 손실을 제한하고, 익절은 이익을 확정하는 것입니다. 진입 전에 반드시 손절 라인을 정해두세요.' },
+    ]
+  },
+  intermediate: {
+    title: '중급',
+    icon: '🌿',
+    lessons: [
+      { title: '이동평균선 활용', description: 'MA, EMA 크로스 전략', content: '이동평균선(MA)은 일정 기간의 평균 가격입니다. 단기 MA가 장기 MA를 상향 돌파하면 골든크로스(매수), 하향 돌파하면 데드크로스(매도) 신호입니다.' },
+      { title: 'RSI 지표', description: '과매수/과매도 구간 파악', content: 'RSI는 0-100 사이의 값으로 표시됩니다. 70 이상은 과매수(매도 고려), 30 이하는 과매도(매수 고려) 구간입니다.' },
+      { title: 'MACD 지표', description: '추세의 강도와 방향 분석', content: 'MACD는 두 이동평균선의 차이를 나타냅니다. MACD선이 시그널선을 상향 돌파하면 매수, 하향 돌파하면 매도 신호입니다.' },
+      { title: '볼린저 밴드', description: '변동성과 추세 분석', content: '볼린저 밴드는 이동평균선과 표준편차로 구성됩니다. 밴드가 좁아지면 큰 움직임 예고, 가격이 밴드를 벗어나면 과매수/과매도 신호입니다.' },
+      { title: '피보나치 되돌림', description: '지지/저항 레벨 예측', content: '피보나치 비율(23.6%, 38.2%, 50%, 61.8%)은 가격 되돌림의 주요 레벨입니다. 추세 방향으로 진입할 때 활용합니다.' },
+      { title: '다이버전스', description: '추세 반전 신호 포착', content: '가격은 신고가를 기록하는데 RSI/MACD가 신고가를 못 만들면 하락 다이버전스(매도), 반대는 상승 다이버전스(매수)입니다.' },
+    ]
+  },
+  advanced: {
+    title: '고급',
+    icon: '🌳',
+    lessons: [
+      { title: '엘리어트 파동이론', description: '5파 상승, 3파 조정 패턴', content: '엘리어트 파동은 시장이 5개의 상승파(충격파)와 3개의 조정파로 움직인다는 이론입니다. 3파가 가장 강력한 상승을 보입니다.' },
+      { title: '하모닉 패턴', description: 'AB=CD, 가틀리, 박쥐 패턴', content: '하모닉 패턴은 피보나치 비율을 기반으로 한 고급 패턴입니다. 정확한 진입점과 손절점을 제공합니다.' },
+      { title: 'ICT 개념', description: 'Order Block, FVG, Liquidity', content: 'ICT(Inner Circle Trader) 개념은 기관의 매매 방식을 분석합니다. 유동성 확보(스탑헌팅) 후 진입하는 전략입니다.' },
+      { title: '멀티타임프레임 분석', description: '큰 그림에서 작은 그림으로', content: '상위 타임프레임에서 방향을 정하고, 하위 타임프레임에서 진입점을 찾습니다. 예: 일봉 추세 → 4시간 구조 → 15분 진입' },
+      { title: '포지션 사이징', description: '자금관리와 리스크 계산', content: '한 번 거래에 총 자금의 1-2%만 위험에 노출시킵니다. 레버리지를 고려한 정확한 포지션 크기 계산이 필수입니다.' },
+      { title: '심리 관리', description: '감정 컨트롤과 매매 일지', content: '공포와 탐욕을 컨트롤하는 것이 가장 중요합니다. 매매 일지를 작성하고 자신의 패턴을 분석하세요.' },
+    ]
+  }
+};
+
 function ChatList({ user, onLogout }) {
   const navigate = useNavigate();
   const [freeRooms, setFreeRooms] = useState([]);
   const [paidRooms, setPaidRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showLogin, setShowLogin] = useState(false);
+  
+  // 교육 섹션 상태
+  const [showGlobalTrading, setShowGlobalTrading] = useState(false);
+  const [showEducation, setShowEducation] = useState(false);
+  const [selectedLevel, setSelectedLevel] = useState(null);
+  const [selectedLesson, setSelectedLesson] = useState(null);
 
   useEffect(() => {
     loadFreeRooms();
@@ -80,6 +133,17 @@ function ChatList({ user, onLogout }) {
     return diff > 0 ? diff : 0;
   };
 
+  // 레벨 선택
+  const handleLevelSelect = (level) => {
+    setSelectedLevel(level);
+    setSelectedLesson(null);
+  };
+
+  // 레슨 선택
+  const handleLessonSelect = (lesson) => {
+    setSelectedLesson(selectedLesson?.title === lesson.title ? null : lesson);
+  };
+
   if (loading) {
     return <div className="loading">로딩 중...</div>;
   }
@@ -131,6 +195,133 @@ function ChatList({ user, onLogout }) {
       </header>
 
       <div className="rooms-container">
+        
+        {/* 📚 교육 섹션 */}
+        <section className="room-section education-section">
+          <h2>📚 투자 교육</h2>
+          <p className="section-description">해외선물 기초부터 고급까지</p>
+          <div className="room-list education-buttons">
+            {/* 오늘의 글로벌 매매 버튼 */}
+            <div 
+              className={`room-card education-card ${showGlobalTrading ? 'active' : ''}`}
+              onClick={() => {
+                setShowGlobalTrading(!showGlobalTrading);
+                setShowEducation(false);
+              }}
+            >
+              <div className="room-icon">📊</div>
+              <div className="room-info">
+                <h3>오늘의 글로벌 매매</h3>
+                <p>주요 종목별 매매 방향</p>
+              </div>
+              <div className="room-badge global">시황</div>
+            </div>
+            
+            {/* 기술적분석 버튼 */}
+            <div 
+              className={`room-card education-card ${showEducation ? 'active' : ''}`}
+              onClick={() => {
+                setShowEducation(!showEducation);
+                setShowGlobalTrading(false);
+                setSelectedLevel(null);
+                setSelectedLesson(null);
+              }}
+            >
+              <div className="room-icon">📖</div>
+              <div className="room-info">
+                <h3>기술적분석</h3>
+                <p>초급 / 중급 / 고급 교육</p>
+              </div>
+              <div className="room-badge education">교육</div>
+            </div>
+          </div>
+          
+          {/* 오늘의 글로벌 매매 내용 */}
+          {showGlobalTrading && (
+            <div className="global-trading-content">
+              <div className="trading-header">
+                <h3>📈 오늘의 시황 분석</h3>
+                <span className="trading-date">{new Date().toLocaleDateString('ko-KR')}</span>
+              </div>
+              <div className="trading-list">
+                {GLOBAL_TRADING_DATA.map((item, index) => (
+                  <div key={index} className={`trading-item ${item.direction.toLowerCase()}`}>
+                    <div className="trading-symbol">
+                      <span className="symbol-name">{item.symbol}</span>
+                      <span className="symbol-desc">{item.name}</span>
+                    </div>
+                    <div className="trading-direction">
+                      <span className={`direction-badge ${item.direction.toLowerCase()}`}>
+                        {item.direction === 'BUY' ? '🟢 BUY 우세' : '🔴 SELL 우세'}
+                      </span>
+                    </div>
+                    <div className="trading-description">{item.description}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="trading-disclaimer">
+                ⚠️ 본 시황은 참고용이며, 투자 판단은 본인 책임입니다.
+              </div>
+            </div>
+          )}
+          
+          {/* 기술적분석 교육 내용 */}
+          {showEducation && (
+            <div className="education-content">
+              {/* 레벨 선택 버튼 */}
+              <div className="level-buttons">
+                {Object.entries(EDUCATION_DATA).map(([key, data]) => (
+                  <button
+                    key={key}
+                    className={`level-btn ${selectedLevel === key ? 'active' : ''}`}
+                    onClick={() => handleLevelSelect(key)}
+                  >
+                    <span className="level-icon">{data.icon}</span>
+                    <span className="level-title">{data.title}</span>
+                  </button>
+                ))}
+              </div>
+              
+              {/* 선택된 레벨의 강의 목록 */}
+              {selectedLevel && (
+                <div className="lessons-container">
+                  <h4>{EDUCATION_DATA[selectedLevel].icon} {EDUCATION_DATA[selectedLevel].title} 과정</h4>
+                  <div className="lessons-list">
+                    {EDUCATION_DATA[selectedLevel].lessons.map((lesson, index) => (
+                      <div key={index} className="lesson-item">
+                        <div 
+                          className={`lesson-header ${selectedLesson?.title === lesson.title ? 'active' : ''}`}
+                          onClick={() => handleLessonSelect(lesson)}
+                        >
+                          <div className="lesson-number">{index + 1}</div>
+                          <div className="lesson-info">
+                            <h5>{lesson.title}</h5>
+                            <p>{lesson.description}</p>
+                          </div>
+                          <div className="lesson-toggle">
+                            {selectedLesson?.title === lesson.title ? '▲' : '▼'}
+                          </div>
+                        </div>
+                        {selectedLesson?.title === lesson.title && (
+                          <div className="lesson-content">
+                            <p>{lesson.content}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {!selectedLevel && (
+                <div className="education-placeholder">
+                  👆 위에서 학습 레벨을 선택하세요
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+
         {/* 교장쌤 소식방 */}
         <section className="room-section">
           <h2>📌 교장쌤 소식방</h2>
