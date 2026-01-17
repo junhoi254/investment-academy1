@@ -16,6 +16,20 @@ from pathlib import Path
 from database import get_db, engine, SessionLocal
 import models
 import schemas
+from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint
+
+# 리액션 모델 정의
+class MessageReaction(models.Base):
+    __tablename__ = "message_reactions"
+    __table_args__ = (
+        UniqueConstraint('message_id', 'user_id', 'reaction_type', name='unique_reaction'),
+        {'extend_existing': True}
+    )
+    
+    id = Column(Integer, primary_key=True, index=True)
+    message_id = Column(Integer, ForeignKey("messages.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    reaction_type = Column(String(20), nullable=False)  # 'heart', 'thumbsup'
 
 # 업로드 폴더 생성
 UPLOAD_DIR = Path("uploads")
@@ -406,6 +420,82 @@ async def delete_message(message_id: int, current_user: models.User = Depends(ge
     }, str(room_id))
     
     return {"message": "삭제되었습니다", "deleted_id": message_id}
+
+# ==================== 메시지 리액션 API ====================
+
+@app.post("/api/messages/{message_id}/react")
+async def toggle_reaction(
+    message_id: int,
+    reaction_type: str,  # 'heart' or 'thumbsup'
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """메시지에 리액션 추가/제거 (토글)"""
+    if reaction_type not in ['heart', 'thumbsup']:
+        raise HTTPException(status_code=400, detail="잘못된 리액션 타입입니다")
+    
+    # 메시지 존재 확인
+    message = db.query(models.Message).filter(models.Message.id == message_id).first()
+    if not message:
+        raise HTTPException(status_code=404, detail="메시지를 찾을 수 없습니다")
+    
+    # 기존 리액션 확인
+    existing = db.query(MessageReaction).filter(
+        MessageReaction.message_id == message_id,
+        MessageReaction.user_id == current_user.id,
+        MessageReaction.reaction_type == reaction_type
+    ).first()
+    
+    if existing:
+        # 이미 있으면 제거 (토글)
+        db.delete(existing)
+        db.commit()
+        action = "removed"
+    else:
+        # 없으면 추가
+        new_reaction = MessageReaction(
+            message_id=message_id,
+            user_id=current_user.id,
+            reaction_type=reaction_type
+        )
+        db.add(new_reaction)
+        db.commit()
+        action = "added"
+    
+    # 현재 리액션 카운트 조회
+    counts = get_reaction_counts(db, message_id)
+    
+    # WebSocket으로 리액션 업데이트 브로드캐스트
+    await manager.send_message({
+        "type": "reaction",
+        "message_id": message_id,
+        "reaction_type": reaction_type,
+        "action": action,
+        "counts": counts,
+        "user_id": current_user.id
+    }, str(message.room_id))
+    
+    return {"success": True, "action": action, "counts": counts}
+
+@app.get("/api/messages/{message_id}/reactions")
+async def get_reactions(message_id: int, db: Session = Depends(get_db)):
+    """메시지 리액션 조회"""
+    counts = get_reaction_counts(db, message_id)
+    return counts
+
+def get_reaction_counts(db: Session, message_id: int):
+    """리액션 카운트 헬퍼 함수"""
+    heart_count = db.query(MessageReaction).filter(
+        MessageReaction.message_id == message_id,
+        MessageReaction.reaction_type == "heart"
+    ).count()
+    
+    thumbsup_count = db.query(MessageReaction).filter(
+        MessageReaction.message_id == message_id,
+        MessageReaction.reaction_type == "thumbsup"
+    ).count()
+    
+    return {"heart": heart_count, "thumbsup": thumbsup_count}
 
 # ==================== 파일 업로드 API ====================
 

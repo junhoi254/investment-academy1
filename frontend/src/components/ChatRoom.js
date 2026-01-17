@@ -33,6 +33,7 @@ function ChatRoom({ user, onLogin, onLogout }) {
   const [ws, setWs] = useState(null);
   const [connected, setConnected] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [reactions, setReactions] = useState({});  // {messageId: {heart: count, thumbsup: count}}
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(() => {
@@ -210,6 +211,12 @@ function ChatRoom({ user, onLogin, onLogout }) {
       } else if (data.type === 'delete') {
         // 메시지 삭제 처리
         setMessages(prev => prev.filter(msg => msg.id !== data.message_id));
+      } else if (data.type === 'reaction') {
+        // 리액션 업데이트
+        setReactions(prev => ({
+          ...prev,
+          [data.message_id]: data.counts
+        }));
       }
     };
 
@@ -286,6 +293,51 @@ function ChatRoom({ user, onLogin, onLogout }) {
   // 삭제 권한 확인 (관리자/서브관리자만)
   const canDeleteMessage = () => {
     return user && (user.role === 'admin' || user.role === 'subadmin');
+  };
+
+  // 리액션 토글 함수
+  const handleReaction = async (messageId, reactionType) => {
+    if (!user) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `${API_URL}/api/messages/${messageId}/react?reaction_type=${reactionType}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      // 로컬 상태 업데이트
+      setReactions(prev => ({
+        ...prev,
+        [messageId]: response.data.counts
+      }));
+    } catch (error) {
+      console.error('리액션 실패:', error);
+    }
+  };
+
+  // 진입대기 메시지 전송 (관리자 전용)
+  const sendEntryWaitingMessage = () => {
+    if (!user || user.role !== 'admin') return;
+    if (!wsRef.current || !connected) {
+      alert('연결이 끊어졌습니다.');
+      return;
+    }
+    
+    const message = `🚨 진입대기!!!
+
+진입 대기 하겠습니다!!
+
+자리에 계신분들 하트 눌러주세요!! ❤️`;
+    
+    wsRef.current.send(JSON.stringify({
+      message: message,
+      type: 'text'
+    }));
   };
 
   const handleImageUpload = async (e) => {
@@ -618,6 +670,20 @@ function ChatRoom({ user, onLogin, onLogout }) {
               ))}
             </div>
           )}
+          <div className="reaction-buttons">
+            <button 
+              className={`reaction-btn ${reactions[message.id]?.heart > 0 ? 'active' : ''}`}
+              onClick={() => handleReaction(message.id, 'heart')}
+            >
+              ❤️ {reactions[message.id]?.heart || 0}
+            </button>
+            <button 
+              className={`reaction-btn ${reactions[message.id]?.thumbsup > 0 ? 'active' : ''}`}
+              onClick={() => handleReaction(message.id, 'thumbsup')}
+            >
+              👍 {reactions[message.id]?.thumbsup || 0}
+            </button>
+          </div>
         </>
       );
     }
@@ -742,7 +808,23 @@ function ChatRoom({ user, onLogin, onLogout }) {
                   )}
                 </div>
                 <pre className="signal-content">{message.content}</pre>
-                <div className="message-time">{formatTime(message.created_at)}</div>
+                <div className="message-footer">
+                  <div className="message-time">{formatTime(message.created_at)}</div>
+                  <div className="reaction-buttons">
+                    <button 
+                      className={`reaction-btn ${reactions[message.id]?.heart > 0 ? 'active' : ''}`}
+                      onClick={() => handleReaction(message.id, 'heart')}
+                    >
+                      ❤️ {reactions[message.id]?.heart || 0}
+                    </button>
+                    <button 
+                      className={`reaction-btn ${reactions[message.id]?.thumbsup > 0 ? 'active' : ''}`}
+                      onClick={() => handleReaction(message.id, 'thumbsup')}
+                    >
+                      👍 {reactions[message.id]?.thumbsup || 0}
+                    </button>
+                  </div>
+                </div>
               </div>
             ) : (
               renderMessage(message, searchQuery)
@@ -824,6 +906,19 @@ function ChatRoom({ user, onLogin, onLogout }) {
                 >
                   😊
                 </button>
+                
+                {/* 진입대기 버튼 (관리자 전용) */}
+                {user && user.role === 'admin' && (
+                  <button
+                    type="button"
+                    className="entry-wait-btn"
+                    onClick={sendEntryWaitingMessage}
+                    disabled={!connected}
+                    title="진입대기 메시지"
+                  >
+                    🚨 진입대기
+                  </button>
+                )}
               </div>
             )}
 
