@@ -33,6 +33,7 @@ function ChatRoom({ user, onLogin, onLogout }) {
   const [ws, setWs] = useState(null);
   const [connected, setConnected] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showToolbar, setShowToolbar] = useState(false);  // 도구 버튼 토글
   const [reactions, setReactions] = useState({});  // {messageId: {heart: count, thumbsup: count}}
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -877,47 +878,68 @@ function ChatRoom({ user, onLogin, onLogout }) {
                   onChange={handleFileUpload}
                 />
                 
+                {/* 도구 토글 버튼 */}
                 <button
                   type="button"
-                  className="upload-btn"
-                  onClick={() => imageInputRef.current?.click()}
-                  disabled={uploadingImage || !connected}
-                  title="이미지 업로드"
+                  className={`toolbar-toggle-btn ${showToolbar ? 'active' : ''}`}
+                  onClick={() => {
+                    setShowToolbar(!showToolbar);
+                    if (showToolbar) setShowEmojiPicker(false);
+                  }}
+                  title="도구 열기"
                 >
-                  {uploadingImage ? '⏳' : '🖼️'}
+                  {showToolbar ? '✕' : '+'}
                 </button>
                 
-                <button
-                  type="button"
-                  className="upload-btn"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingFile || !connected}
-                  title="파일 업로드"
-                >
-                  {uploadingFile ? '⏳' : '📎'}
-                </button>
-                
-                <button
-                  type="button"
-                  className="emoji-btn"
-                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  disabled={!connected}
-                  title="이모티콘"
-                >
-                  😊
-                </button>
-                
-                {/* 진입대기 버튼 (관리자 전용) */}
-                {user && user.role === 'admin' && (
-                  <button
-                    type="button"
-                    className="entry-wait-btn"
-                    onClick={sendEntryWaitingMessage}
-                    disabled={!connected}
-                    title="진입대기 메시지"
-                  >
-                    🚨
-                  </button>
+                {/* 펼쳐지는 도구 버튼들 */}
+                {showToolbar && (
+                  <>
+                    <button
+                      type="button"
+                      className="upload-btn"
+                      onClick={() => imageInputRef.current?.click()}
+                      disabled={uploadingImage || !connected}
+                      title="이미지 업로드"
+                    >
+                      {uploadingImage ? '⏳' : '🖼️'}
+                    </button>
+                    
+                    <button
+                      type="button"
+                      className="upload-btn"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingFile || !connected}
+                      title="파일 업로드"
+                    >
+                      {uploadingFile ? '⏳' : '📎'}
+                    </button>
+                    
+                    <button
+                      type="button"
+                      className="emoji-btn"
+                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                      disabled={!connected}
+                      title="이모티콘"
+                    >
+                      😊
+                    </button>
+                    
+                    {/* 진입대기 버튼 (관리자 전용) */}
+                    {user && user.role === 'admin' && (
+                      <button
+                        type="button"
+                        className="entry-wait-btn"
+                        onClick={() => {
+                          sendEntryWaitingMessage();
+                          setShowToolbar(false);
+                        }}
+                        disabled={!connected}
+                        title="진입대기 메시지"
+                      >
+                        🚨
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             )}
