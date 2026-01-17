@@ -311,9 +311,9 @@ async def reset_admin_temp(db: Session = Depends(get_db)):
     if admin:
         admin.phone = "010-6512-6542"
         admin.password = get_password_hash("Rlawnsghl1!")
-        admin.name = "타점잡는 교장쌤"
+        admin.name = "일타교장쌤"
         db.commit()
-        return {"message": "관리자 변경 완료!", "phone": "010-6512-6542", "name": "타점잡는 교장쌤"}
+        return {"message": "관리자 변경 완료!", "phone": "010-6512-6542", "name": "일타교장쌤"}
     return {"message": "관리자를 찾을 수 없습니다"}
 
 @app.put("/api/admin/rooms/{room_id}")
@@ -1201,18 +1201,23 @@ async def startup_event():
     
     db = SessionLocal()
     try:
-        # 관리자 계정 생성
+        # 관리자 계정 생성/업데이트
         admin = db.query(models.User).filter(models.User.phone == "010-6512-6542").first()
         if not admin:
             admin = models.User(
                 phone="010-6512-6542",
                 password=get_password_hash("Rlawnsghl1!"),
-                name="타점잡는 교장쌤",
+                name="일타교장쌤",
                 role="admin",
                 is_approved=True
             )
             db.add(admin)
             db.commit()
+        else:
+            # 기존 관리자 이름 업데이트
+            if admin.name != "일타교장쌤":
+                admin.name = "일타교장쌤"
+                db.commit()
         
         # 기본 채팅방 생성
         rooms = db.query(models.Room).all()

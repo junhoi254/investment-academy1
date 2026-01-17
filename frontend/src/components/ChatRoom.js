@@ -409,16 +409,31 @@ function ChatRoom({ user, onLogin, onLogout }) {
   };
 
   const formatTime = (timestamp) => {
-    const date = new Date(timestamp);
+    if (!timestamp) return '';
+    
+    // UTC 시간을 한국 시간으로 변환
+    let date;
+    if (typeof timestamp === 'string') {
+      // timestamp가 Z로 끝나지 않으면 UTC로 간주하고 Z 추가
+      if (!timestamp.endsWith('Z') && !timestamp.includes('+')) {
+        date = new Date(timestamp + 'Z');
+      } else {
+        date = new Date(timestamp);
+      }
+    } else {
+      date = new Date(timestamp);
+    }
+    
     return date.toLocaleTimeString('ko-KR', { 
       hour: '2-digit', 
-      minute: '2-digit' 
+      minute: '2-digit',
+      timeZone: 'Asia/Seoul'
     });
   };
 
   const getUserRoleBadge = (role) => {
     const badges = {
-      admin: { text: '타점잡는 교장쌤', class: 'admin' },
+      admin: { text: '일타교장쌤', class: 'admin' },
       subadmin: { text: '서브관리자', class: 'staff' },
       staff: { text: '서브관리자', class: 'staff' },
       member: { text: '회원', class: 'member' },
