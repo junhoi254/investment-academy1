@@ -1,10 +1,65 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './ChatRoom.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 const WS_URL = process.env.REACT_APP_WS_URL || 'ws://localhost:8000';
+
+// 사이렌 소리 생성 (Web Audio API)
+const playAlertSound = (type = 'signal') => {
+  try {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    
+    if (type === 'signal') {
+      // 사이렌 소리 (상승-하강 반복)
+      const duration = 2;
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.type = 'sine';
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      
+      // 사이렌 주파수 변화
+      const now = audioContext.currentTime;
+      for (let i = 0; i < 4; i++) {
+        oscillator.frequency.setValueAtTime(800, now + i * 0.5);
+        oscillator.frequency.linearRampToValueAtTime(1200, now + i * 0.5 + 0.25);
+        oscillator.frequency.linearRampToValueAtTime(800, now + i * 0.5 + 0.5);
+      }
+      
+      gainNode.gain.setValueAtTime(0.3, now);
+      gainNode.gain.linearRampToValueAtTime(0, now + duration);
+      
+      oscillator.start(now);
+      oscillator.stop(now + duration);
+    }
+  } catch (e) {
+    console.log('소리 재생 실패:', e);
+  }
+};
+
+// 진동 (모바일)
+const vibrate = (pattern = [200, 100, 200, 100, 200]) => {
+  if ('vibrate' in navigator) {
+    navigator.vibrate(pattern);
+  }
+};
+
+// 브라우저 알림
+const showNotification = (title, body) => {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification(title, {
+      body,
+      icon: '📈',
+      tag: 'signal-alert',
+      requireInteraction: true
+    });
+  }
+};
 
 // 이모티콘 목록
 const EMOJIS = [
@@ -43,6 +98,15 @@ function ChatRoom({ user, onLogin, onLogout }) {
   });
   const [searchMode, setSearchMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // 알림 상태 (localStorage와 동기화)
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    const saved = localStorage.getItem('signalSoundEnabled');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+  const [showSignalPopup, setShowSignalPopup] = useState(false);
+  const [lastSignal, setLastSignal] = useState(null);
+  
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -50,6 +114,31 @@ function ChatRoom({ user, onLogin, onLogout }) {
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
   const searchInputRef = useRef(null);
+
+  // 소리 설정 저장
+  useEffect(() => {
+    localStorage.setItem('signalSoundEnabled', JSON.stringify(soundEnabled));
+  }, [soundEnabled]);
+
+  // 시그널 알림 처리
+  const handleSignalAlert = useCallback((content) => {
+    setLastSignal({
+      content,
+      time: new Date().toLocaleTimeString('ko-KR')
+    });
+    setShowSignalPopup(true);
+    
+    // 소리 또는 진동
+    if (soundEnabled) {
+      playAlertSound('signal');
+      showNotification('🚨 시그널 알림', content.substring(0, 100));
+    } else {
+      vibrate([200, 100, 200, 100, 200]);
+    }
+    
+    // 5초 후 팝업 자동 닫기
+    setTimeout(() => setShowSignalPopup(false), 5000);
+  }, [soundEnabled]);
 
   // 면책조항 수락 시 세션 스토리지에 저장
   useEffect(() => {
@@ -182,7 +271,7 @@ function ChatRoom({ user, onLogin, onLogout }) {
       const data = JSON.parse(event.data);
       
       if (data.type === 'message') {
-        setMessages(prev => [...prev, {
+        const newMsg = {
           id: data.id,
           user_id: data.user_id,
           content: data.content,
@@ -194,7 +283,22 @@ function ChatRoom({ user, onLogin, onLogout }) {
             name: data.user_name,
             role: data.user_role
           }
-        }]);
+        };
+        
+        setMessages(prev => [...prev, newMsg]);
+        
+        // 시그널 메시지 감지 시 알림
+        const content = data.content || '';
+        const isSignal = data.message_type === 'signal' || 
+                         content.includes('BUY') || 
+                         content.includes('SELL') ||
+                         content.includes('OPEN') ||
+                         content.includes('진입') ||
+                         content.includes('포지션');
+        
+        if (isSignal && data.user_id !== user?.id) {
+          handleSignalAlert(content);
+        }
       } else if (data.type === 'system') {
         // 시스템 메시지는 더 이상 표시하지 않음
         console.log('System:', data.message);
@@ -209,6 +313,9 @@ function ChatRoom({ user, onLogin, onLogout }) {
             role: 'system'
           }
         }]);
+        
+        // 시그널 알림
+        handleSignalAlert(data.content);
       } else if (data.type === 'delete') {
         // 메시지 삭제 처리
         setMessages(prev => prev.filter(msg => msg.id !== data.message_id));
@@ -692,6 +799,30 @@ function ChatRoom({ user, onLogin, onLogout }) {
 
   return (
     <div className="chatroom-container">
+      {/* 시그널 알림 팝업 */}
+      {showSignalPopup && lastSignal && (
+        <div className="signal-popup" onClick={() => setShowSignalPopup(false)}>
+          <div className="signal-popup-content">
+            <div className="signal-popup-header">
+              <span className="signal-icon">🚨</span>
+              <span className="signal-title">시그널 알림</span>
+              <span className="signal-time">{lastSignal.time}</span>
+            </div>
+            <div className="signal-popup-body">
+              {lastSignal.content.split('\n').map((line, i) => (
+                <p key={i}>{line}</p>
+              ))}
+            </div>
+            <button 
+              className="signal-popup-close"
+              onClick={() => setShowSignalPopup(false)}
+            >
+              확인
+            </button>
+          </div>
+        </div>
+      )}
+      
       <header className="chatroom-header">
         <button className="back-button" onClick={() => navigate('/chat')}>
           ← 뒤로
@@ -706,6 +837,16 @@ function ChatRoom({ user, onLogin, onLogout }) {
           )}
         </div>
         <div className="header-actions">
+          {/* 소리 알림 토글 */}
+          {user && (
+            <button 
+              className={`icon-button sound-toggle ${soundEnabled ? 'on' : 'off'}`}
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              title={soundEnabled ? '소리 끄기' : '소리 켜기'}
+            >
+              {soundEnabled ? '🔔' : '🔕'}
+            </button>
+          )}
           <button className="search-toggle-btn" onClick={toggleSearchMode} title="검색">
             🔍
           </button>
