@@ -614,7 +614,8 @@ async def websocket_chat(websocket: WebSocket, room_id: int, token: str):
 
 # ==================== 시장 분석 API (MT4 기반) ====================
 
-MT4_API_KEY = "tajum-signal-2026"  # API 키 (MT4 EA에서 동일하게 사용)
+# API Key for market analysis
+MARKET_API_KEY = "tajum-signal-2026"
 
 # MT4에서 받은 데이터 저장소
 market_analysis_cache = {
@@ -623,7 +624,7 @@ market_analysis_cache = {
     'source': None  # 'mt4' or 'fallback'
 }
 
-# MT4 데이터 수신 모델
+# MT4 데이터 수신 모델 (유연하게)
 class MarketDataItem(BaseModel):
     symbol_code: str
     symbol: str
@@ -636,10 +637,16 @@ class MarketDataItem(BaseModel):
     macd: Optional[float] = None
     macd_signal: Optional[float] = None
     reasons: Optional[str] = None
+    
+    class Config:
+        extra = 'ignore'
 
 class MarketUpdateRequest(BaseModel):
     api_key: Optional[str] = None
-    data: List[MarketDataItem]
+    data: List[dict]
+    
+    class Config:
+        extra = 'ignore'
 
 # 폴백 데이터 (MT4 데이터 없을 때)
 def get_fallback_data():
@@ -647,57 +654,57 @@ def get_fallback_data():
     return [
         {
             'symbol_code': 'EURUSD',
-            'symbol': '유로/달러',
+            'symbol': 'EUR/USD',
             'direction': 'NEUTRAL',
             'score': 0,
             'price': 1.0850,
             'rsi': 50.0,
-            'reasons': ['MT4 연결 대기중']
+            'reasons': ['Waiting for MT4']
         },
         {
             'symbol_code': 'XAUUSD',
-            'symbol': '골드',
+            'symbol': 'GOLD',
             'direction': 'NEUTRAL',
             'score': 0,
             'price': 2700.00,
             'rsi': 50.0,
-            'reasons': ['MT4 연결 대기중']
+            'reasons': ['Waiting for MT4']
         },
         {
             'symbol_code': 'HK50',
-            'symbol': '항셍',
+            'symbol': 'HK50',
             'direction': 'NEUTRAL',
             'score': 0,
             'price': 19500.00,
             'rsi': 50.0,
-            'reasons': ['MT4 연결 대기중']
+            'reasons': ['Waiting for MT4']
         },
         {
             'symbol_code': 'UK100',
-            'symbol': '영국FTSE',
+            'symbol': 'UK100',
             'direction': 'NEUTRAL',
             'score': 0,
             'price': 8500.00,
             'rsi': 50.0,
-            'reasons': ['MT4 연결 대기중']
+            'reasons': ['Waiting for MT4']
         },
         {
             'symbol_code': 'US100',
-            'symbol': '나스닥',
+            'symbol': 'NAS100',
             'direction': 'NEUTRAL',
             'score': 0,
             'price': 21500.00,
             'rsi': 50.0,
-            'reasons': ['MT4 연결 대기중']
+            'reasons': ['Waiting for MT4']
         },
         {
             'symbol_code': 'BTCUSD',
-            'symbol': '비트코인',
+            'symbol': 'BTCUSD',
             'direction': 'NEUTRAL',
             'score': 0,
             'price': 100000.00,
             'rsi': 50.0,
-            'reasons': ['MT4 연결 대기중']
+            'reasons': ['Waiting for MT4']
         },
     ]
 
@@ -710,12 +717,12 @@ async def update_market_data(request: Request):
         # Raw JSON 파싱
         raw_body = await request.body()
         body_str = raw_body.decode('utf-8')
-        print(f"📥 받은 원본 데이터: {body_str[:500]}...")
+        print(f"Received data: {body_str[:500]}...")
         
         body = json.loads(body_str)
     except Exception as e:
-        print(f"❌ JSON 파싱 오류: {e}")
-        return {"success": False, "error": f"JSON 파싱 오류: {str(e)}"}
+        print(f"JSON parse error: {e}")
+        return {"success": False, "error": f"JSON parse error: {str(e)}"}
     
     # API 키 검증
     api_key = body.get('api_key')
@@ -724,14 +731,14 @@ async def update_market_data(request: Request):
     if not api_key:
         api_key = request.headers.get("x-api-key")
     
-    if api_key != MT4_API_KEY:
-        print(f"❌ API 키 불일치: {api_key}")
+    if api_key != MARKET_API_KEY:
+        print(f"API Key mismatch: received={api_key}, expected={MARKET_API_KEY}")
         return {"success": False, "error": "Invalid API Key"}
     
     # 데이터 파싱
     raw_data = body.get('data', [])
     if not raw_data:
-        return {"success": False, "error": "데이터가 없습니다"}
+        return {"success": False, "error": "No data"}
     
     data_list = []
     for item in raw_data:
@@ -758,19 +765,19 @@ async def update_market_data(request: Request):
                 'macd_signal': float(item.get('macd_signal', 0)) if item.get('macd_signal') else None,
                 'reasons': reasons
             })
-            print(f"   ✅ 파싱 성공: {item.get('symbol_code')}")
+            print(f"   Parsed: {item.get('symbol_code')}")
         except Exception as e:
-            print(f"   ⚠️ 항목 파싱 오류: {item} - {e}")
+            print(f"   Parse error: {item} - {e}")
             continue
     
     if not data_list:
-        return {"success": False, "error": "유효한 데이터가 없습니다"}
+        return {"success": False, "error": "No valid data"}
     
     market_analysis_cache['data'] = data_list
     market_analysis_cache['updated_at'] = datetime.now()
     market_analysis_cache['source'] = 'mt4'
     
-    print(f"📊 MT4 시황 데이터 수신 완료: {len(data_list)}개 종목")
+    print(f"MT4 data received: {len(data_list)} symbols")
     for item in data_list:
         print(f"   {item['symbol_code']}: {item['direction']} (점수: {item['score']})")
     
@@ -782,7 +789,7 @@ async def update_market_data(request: Request):
 
 @app.get("/api/market/analysis")
 async def get_market_analysis():
-    """시장 분석 데이터 조회"""
+    """Get market analysis data"""
     global market_analysis_cache
     
     # 데이터가 있고 30분 이내면 반환
@@ -797,24 +804,24 @@ async def get_market_analysis():
             }
     
     # 데이터 없으면 폴백
-    print("⚠️ MT4 데이터 없음 - 폴백 데이터 사용")
+    print("No MT4 data - using fallback")
     return {
         'success': True,
         'data': get_fallback_data(),
         'updated_at': datetime.now().isoformat(),
         'source': 'fallback',
-        'message': 'MT4 연결 대기중 - 기본값 표시'
+        'message': 'Waiting for MT4 connection'
     }
 
 @app.post("/api/market/refresh")
 async def refresh_market_analysis(current_user: models.User = Depends(get_current_user)):
-    """시장 분석 수동 갱신 요청 (관리자만) - MT4에서 갱신됨"""
+    """Manual refresh request (admin only) - Updated by MT4 EA"""
     if current_user.role != 'admin':
-        raise HTTPException(status_code=403, detail="관리자만 갱신 가능합니다")
+        raise HTTPException(status_code=403, detail="Admin only")
     
     return {
         'success': True,
-        'message': 'MT4 EA가 5분마다 자동 업데이트합니다. 데이터가 없으면 MT4 EA 실행 상태를 확인하세요.',
+        'message': 'MT4 EA updates every 5 minutes. Check MT4 EA status if no data.',
         'data': market_analysis_cache['data'] if market_analysis_cache['data'] else get_fallback_data(),
         'updated_at': market_analysis_cache['updated_at'].isoformat() if market_analysis_cache['updated_at'] else datetime.now().isoformat(),
         'source': market_analysis_cache['source'] or 'fallback'
@@ -822,16 +829,16 @@ async def refresh_market_analysis(current_user: models.User = Depends(get_curren
 
 @app.get("/api/market/status")
 async def get_market_status():
-    """시장 분석 상태 확인"""
+    """Market analysis status"""
     has_data = len(market_analysis_cache['data']) > 0
     updated_at = market_analysis_cache['updated_at']
     
     # 마지막 업데이트 후 경과 시간
     if updated_at:
         elapsed = (datetime.now() - updated_at).seconds
-        elapsed_str = f"{elapsed // 60}분 {elapsed % 60}초 전"
+        elapsed_str = f"{elapsed // 60}m {elapsed % 60}s ago"
     else:
-        elapsed_str = "업데이트 없음"
+        elapsed_str = "No update"
     
     return {
         'status': 'connected' if has_data else 'waiting',
