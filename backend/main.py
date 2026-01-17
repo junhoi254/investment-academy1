@@ -554,28 +554,50 @@ async def receive_mt4_signal(
     
     print(f"[MT4 SIGNAL] Sending to room: id={room.id}, name={room.name}")
     
-    # 시그널 타입에 따른 이모지
-    if action == "BUY":
-        emoji = "🟢"
-        action_text = "매수 (LONG)"
-    elif action == "SELL":
-        emoji = "🔴"
-        action_text = "매도 (SHORT)"
-    else:
-        emoji = "⚪"
-        action_text = "청산"
+    # 시그널 타입에 따른 메시지 생성
+    action_upper = action.upper()
     
-    content = f"""{emoji} {action_text} 시그널
+    if action_upper in ["BUY", "SELL"]:
+        # 진입 시그널
+        direction = "매수(BUY)" if action_upper == "BUY" else "매도(SELL)"
+        content = f"""OPEN
+🟢 포지션 진입 {direction}
 
-📊 종목: {symbol}
+📊 【{symbol}】
+
 💰 진입가: {price}"""
-    
-    if sl > 0:
-        content += f"\n🛑 손절가: {sl}"
-    if tp > 0:
-        content += f"\n🎯 목표가: {tp}"
-    if lots > 0:
-        content += f"\n📦 수량: {lots} Lots"
+        
+        if sl > 0:
+            content += f"\n🛑 손절가: {sl}"
+        if tp > 0:
+            content += f"\n🎯 목표가: {tp}"
+        if lots > 0:
+            content += f"\n📦 수량: {lots} Lots"
+        
+        content += "\n\n투자의 책임은 본인에게 있습니다."
+        
+    elif action_upper in ["CLOSE", "CLOSE_BUY", "CLOSE_SELL"]:
+        # 종료 시그널
+        if action_upper == "CLOSE_BUY":
+            direction = "매수(BUY)"
+        elif action_upper == "CLOSE_SELL":
+            direction = "매도(SELL)"
+        else:
+            direction = ""
+        
+        content = f"""CLOSE
+🔴 포지션 종료 {direction}
+
+📊 【{symbol}】
+
+투자의 책임은 본인에게 있습니다."""
+    else:
+        # 기타
+        content = f"""📊 【{symbol}】 {action}
+
+💰 가격: {price}
+
+투자의 책임은 본인에게 있습니다."""
     
     # 관리자 ID로 메시지 저장
     admin = db.query(models.User).filter(models.User.role == "admin").first()
