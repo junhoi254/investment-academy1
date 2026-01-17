@@ -619,17 +619,19 @@ MT4_API_KEY = "tajum-signal-2026"  # API 키 (MT4 EA에서 동일하게 사용)
 @app.post("/api/mt4/signal")
 async def receive_mt4_signal(
     symbol: str,
-    action: str,  # BUY, SELL, CLOSE
+    action: str,  # BUY, SELL, CLOSE_BUY, CLOSE_SELL
     price: float,
     sl: float = 0,
     tp: float = 0,
     lots: float = 0,
+    entry_price: float = 0,  # 종료 시 진입가
+    profit: float = 0,  # 종료 시 수익
     api_key: str = "",
     db: Session = Depends(get_db)
 ):
     """MT4에서 시그널 수신"""
     # API Key 검증 임시 비활성화 (테스트용)
-    print(f"[MT4 SIGNAL] Received: symbol={symbol}, action={action}, price={price}, api_key={api_key}")
+    print(f"[MT4 SIGNAL] Received: symbol={symbol}, action={action}, price={price}, lots={lots}, entry_price={entry_price}, profit={profit}")
     # if api_key != MT4_API_KEY:
     #     raise HTTPException(status_code=403, detail="Invalid API key")
     
@@ -647,24 +649,20 @@ async def receive_mt4_signal(
     # 시그널 타입에 따른 메시지 생성
     action_upper = action.upper()
     
+    # 수량 x100 계산
+    display_lots = lots * 100 if lots > 0 else 0
+    
     if action_upper in ["BUY", "SELL"]:
         # 진입 시그널
         direction = "매수(BUY)" if action_upper == "BUY" else "매도(SELL)"
-        content = f"""OPEN
-🟢 포지션 진입 {direction}
+        content = f"""OPEN 🟢 포지션 진입
 
-📊 【{symbol}】
+{direction}  📊 【{symbol}】
 
 💰 진입가: {price}"""
         
-        if sl > 0:
-            content += f"\n🛑 손절가: {sl}"
-        if tp > 0:
-            content += f"\n🎯 목표가: {tp}"
-        if lots > 0:
-            content += f"\n📦 수량: {lots} Lots"
-        
-        content += "\n\n투자의 책임은 본인에게 있습니다."
+        if display_lots > 0:
+            content += f"\n📦 수량: {display_lots:.0f} Lots"
         
     elif action_upper in ["CLOSE", "CLOSE_BUY", "CLOSE_SELL"]:
         # 종료 시그널
@@ -675,19 +673,22 @@ async def receive_mt4_signal(
         else:
             direction = ""
         
-        content = f"""CLOSE
-🔴 포지션 종료 {direction}
+        # 수익 x100 계산
+        display_profit = profit * 100 if profit != 0 else 0
+        
+        content = f"""CLOSE 🔴 포지션 종료
 
-📊 【{symbol}】
+{direction}  📊 【{symbol}】
 
-투자의 책임은 본인에게 있습니다."""
+💰 진입가: {entry_price if entry_price > 0 else '-'}
+💰 청산가: {price}
+💵 수익: ${display_profit:+,.2f}"""
+        
     else:
         # 기타
         content = f"""📊 【{symbol}】 {action}
 
-💰 가격: {price}
-
-투자의 책임은 본인에게 있습니다."""
+💰 가격: {price}"""
     
     # 관리자 ID로 메시지 저장
     admin = db.query(models.User).filter(models.User.role == "admin").first()
