@@ -714,7 +714,18 @@ function ChatRoom({ user, onLogin, onLogout }) {
               <div className="system-message">{message.content}</div>
             ) : message.message_type === 'signal' ? (
               <div className="signal-message">
-                <div className="signal-header">📊 트레이딩 시그널</div>
+                <div className="signal-header">
+                  📊 트레이딩 시그널
+                  {canDeleteMessage() && (
+                    <button 
+                      className="delete-message-btn"
+                      onClick={() => handleDeleteMessage(message.id)}
+                      title="삭제"
+                    >
+                      🗑️
+                    </button>
+                  )}
+                </div>
                 <pre className="signal-content">{message.content}</pre>
                 <div className="message-time">{formatTime(message.created_at)}</div>
               </div>
