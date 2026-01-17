@@ -620,6 +620,7 @@ import numpy as np
 
 # 분석할 종목 설정
 TRADING_SYMBOLS = {
+    'BTCUSD': {'ticker': 'BTC-USD', 'name': '비트코인'},
     'EURUSD': {'ticker': 'EURUSD=X', 'name': '유로/달러'},
     'US100': {'ticker': 'NQ=F', 'name': '나스닥'},
     'HK50': {'ticker': '^HSI', 'name': '항셍'},

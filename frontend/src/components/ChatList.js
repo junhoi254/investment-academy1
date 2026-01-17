@@ -278,7 +278,7 @@ function ChatList({ user, onLogout }) {
           {showGlobalTrading && (
             <div className="global-trading-content">
               <div className="trading-header">
-                <h3>📈 AI 자동 시황 분석</h3>
+                <h3>📈 시황 분석</h3>
                 <div className="trading-header-right">
                   {marketUpdatedAt && (
                     <span className="trading-date">
