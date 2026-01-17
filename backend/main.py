@@ -964,29 +964,42 @@ class SignalData(BaseModel):
     ticket: Optional[int] = None
     comment: Optional[str] = None
     direction: Optional[str] = None  # BUY 또는 SELL (종료 시 원래 포지션 방향)
+    api_key: Optional[str] = None  # Body에서도 API Key 받기
 
 @app.post("/api/signal/receive")
 async def receive_signal(
     request: Request,
     signal: SignalData, 
     db: Session = Depends(get_db),
-    x_api_key: Optional[str] = Header(None, alias="X-API-Key")
+    api_key: Optional[str] = None  # Query parameter로도 받기
 ):
     """MT4 EA로부터 시그널 수신"""
-    # Header에서 API Key 가져오기 (다양한 방식 지원)
-    api_key = x_api_key or request.headers.get("X-API-Key") or request.headers.get("x-api-key")
-    return await _receive_signal_internal(signal, db, api_key)
+    # API Key 우선순위: Query param > Body > Header
+    key = api_key or signal.api_key
+    if not key:
+        key = request.headers.get("X-API-Key")
+    if not key:
+        key = request.headers.get("x-api-key")
+    if not key:
+        key = request.headers.get("X-Api-Key")
+    return await _receive_signal_internal(signal, db, key)
 
 @app.post("/api/signal")
 async def receive_signal_v2(
     request: Request,
     signal: SignalData, 
     db: Session = Depends(get_db),
-    x_api_key: Optional[str] = Header(None, alias="X-API-Key")
+    api_key: Optional[str] = None
 ):
     """MT4 EA로부터 시그널 수신 (대체 경로)"""
-    api_key = x_api_key or request.headers.get("X-API-Key") or request.headers.get("x-api-key")
-    return await _receive_signal_internal(signal, db, api_key)
+    key = api_key or signal.api_key
+    if not key:
+        key = request.headers.get("X-API-Key")
+    if not key:
+        key = request.headers.get("x-api-key")
+    if not key:
+        key = request.headers.get("X-Api-Key")
+    return await _receive_signal_internal(signal, db, key)
 
 async def _receive_signal_internal(signal: SignalData, db: Session, api_key: str = None):
     """시그널 처리 내부 함수"""
