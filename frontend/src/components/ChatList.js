@@ -526,17 +526,10 @@ function ChatList({ user, onLogout }) {
           <h2>📚 투자 교육</h2>
           <p className="section-description">해외선물 기초부터 고급까지</p>
           <div className="room-list education-buttons">
-            {/* 오늘의 글로벌 매매 버튼 */}
+            {/* 오늘의 글로벌 매매 버튼 - 페이지 이동 */}
             <div 
-              className={`room-card education-card ${showGlobalTrading ? 'active' : ''}`}
-              onClick={() => {
-                const newState = !showGlobalTrading;
-                setShowGlobalTrading(newState);
-                setShowEducation(false);
-                if (newState && marketData.length === 0) {
-                  loadMarketAnalysis();
-                }
-              }}
+              className="room-card education-card"
+              onClick={() => navigate('/global-trading')}
             >
               <div className="room-icon">📊</div>
               <div className="room-info">
@@ -546,15 +539,10 @@ function ChatList({ user, onLogout }) {
               <div className="room-badge global">시황</div>
             </div>
             
-            {/* 기술적분석 버튼 */}
+            {/* 기술적분석 버튼 - 페이지 이동 */}
             <div 
-              className={`room-card education-card ${showEducation ? 'active' : ''}`}
-              onClick={() => {
-                setShowEducation(!showEducation);
-                setShowGlobalTrading(false);
-                setSelectedLevel(null);
-                setSelectedLesson(null);
-              }}
+              className="room-card education-card"
+              onClick={() => navigate('/tech-analysis')}
             >
               <div className="room-icon">📖</div>
               <div className="room-info">
@@ -564,125 +552,6 @@ function ChatList({ user, onLogout }) {
               <div className="room-badge education">교육</div>
             </div>
           </div>
-          
-          {/* 오늘의 글로벌 매매 내용 */}
-          {showGlobalTrading && (
-            <div className="global-trading-content">
-              <div className="trading-header">
-                <h3>📈 시황 분석</h3>
-                <div className="trading-header-right">
-                  {marketUpdatedAt && (
-                    <span className="trading-date">
-                      {new Date(marketUpdatedAt).toLocaleString('ko-KR')}
-                    </span>
-                  )}
-                  {user && user.role === 'admin' && (
-                    <button 
-                      className="refresh-btn"
-                      onClick={refreshMarketAnalysis}
-                      disabled={marketLoading}
-                    >
-                      {marketLoading ? '⏳' : '🔄'}
-                    </button>
-                  )}
-                </div>
-              </div>
-              
-              {marketLoading ? (
-                <div className="trading-loading">분석 중... ⏳</div>
-              ) : marketData.length > 0 ? (
-                <div className="trading-list">
-                  {marketData.map((item, index) => (
-                    <div key={index} className={`trading-item ${item.direction.toLowerCase()}`}>
-                      <div className="trading-symbol">
-                        <span className="symbol-name">{item.symbol_code}</span>
-                        <span className="symbol-desc">{item.symbol}</span>
-                      </div>
-                      <div className="trading-direction">
-                        <span className={`direction-badge ${item.direction.toLowerCase()}`}>
-                          {item.direction === 'BUY' ? '🟢 BUY 우세' : 
-                           item.direction === 'SELL' ? '🔴 SELL 우세' : '⚪ 중립'}
-                        </span>
-                      </div>
-                      <div className="trading-analysis">
-                        <div className="trading-score">점수: {item.score > 0 ? '+' : ''}{item.score}</div>
-                        <div className="trading-indicators">
-                          RSI: {item.rsi} | 현재가: {item.price}
-                        </div>
-                        <div className="trading-reasons">
-                          {item.reasons?.join(' • ')}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="trading-empty">
-                  데이터를 불러올 수 없습니다. 다시 시도해주세요.
-                </div>
-              )}
-              
-              <div className="trading-disclaimer">
-                ⚠️ 본 분석은 기술적 지표 기반 자동 분석이며, 투자 판단은 본인 책임입니다.
-              </div>
-            </div>
-          )}
-          
-          {/* 기술적분석 교육 내용 */}
-          {showEducation && (
-            <div className="education-content">
-              {/* 레벨 선택 버튼 */}
-              <div className="level-buttons">
-                {Object.entries(EDUCATION_DATA).map(([key, data]) => (
-                  <button
-                    key={key}
-                    className={`level-btn ${selectedLevel === key ? 'active' : ''}`}
-                    onClick={() => handleLevelSelect(key)}
-                  >
-                    <span className="level-icon">{data.icon}</span>
-                    <span className="level-title">{data.title}</span>
-                  </button>
-                ))}
-              </div>
-              
-              {/* 선택된 레벨의 강의 목록 */}
-              {selectedLevel && (
-                <div className="lessons-container">
-                  <h4>{EDUCATION_DATA[selectedLevel].icon} {EDUCATION_DATA[selectedLevel].title} 과정</h4>
-                  <div className="lessons-list">
-                    {EDUCATION_DATA[selectedLevel].lessons.map((lesson, index) => (
-                      <div key={index} className="lesson-item">
-                        <div 
-                          className={`lesson-header ${selectedLesson?.title === lesson.title ? 'active' : ''}`}
-                          onClick={() => handleLessonSelect(lesson)}
-                        >
-                          <div className="lesson-number">{index + 1}</div>
-                          <div className="lesson-info">
-                            <h5>{lesson.title}</h5>
-                            <p>{lesson.description}</p>
-                          </div>
-                          <div className="lesson-toggle">
-                            {selectedLesson?.title === lesson.title ? '▲' : '▼'}
-                          </div>
-                        </div>
-                        {selectedLesson?.title === lesson.title && (
-                          <div className="lesson-content">
-                            <p>{lesson.content}</p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {!selectedLevel && (
-                <div className="education-placeholder">
-                  👆 위에서 학습 레벨을 선택하세요
-                </div>
-              )}
-            </div>
-          )}
         </section>
 
         {/* 교장쌤 소식방 */}
