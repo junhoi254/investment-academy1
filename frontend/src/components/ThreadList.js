@@ -133,6 +133,19 @@ function ThreadList({ user }) {
     return name ? name.charAt(0).toUpperCase() : '?';
   };
 
+  // 회원 이름 마스킹 (김지용 → 김*용)
+  const maskName = (name, role) => {
+    // admin, staff는 마스킹 안함
+    if (role === 'admin' || role === 'staff') return name;
+    if (!name) return '익명';
+    
+    const len = name.length;
+    if (len === 1) return name;
+    if (len === 2) return name[0] + '*';
+    // 3글자 이상: 첫글자 + * + 마지막글자
+    return name[0] + '*'.repeat(len - 2) + name[len - 1];
+  };
+
   // 유튜브 URL에서 비디오 ID 추출
   const getYoutubeVideoId = (url) => {
     const patterns = [
@@ -270,7 +283,7 @@ function ThreadList({ user }) {
                             </div>
                             <div className="comment-body">
                               <div className="comment-header">
-                                <span className="comment-author">{comment.user?.name}</span>
+                                <span className="comment-author">{maskName(comment.user?.name, comment.user?.role)}</span>
                                 {getRoleBadge(comment.user?.role).text && (
                                   <span className={`role-badge ${getRoleBadge(comment.user?.role).class}`}>
                                     {getRoleBadge(comment.user?.role).text}
