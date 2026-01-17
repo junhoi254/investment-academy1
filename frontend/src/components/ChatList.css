@@ -825,6 +825,7 @@
 .notification-bar-left {
   display: flex;
   align-items: center;
+  gap: 10px;
 }
 
 .notification-bar-right {
@@ -852,6 +853,27 @@
   background: rgba(239, 68, 68, 0.2);
   border-color: #ef4444;
   color: #ef4444;
+}
+
+.ws-status {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 10px;
+}
+
+.ws-status.connected {
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.ws-status.disconnected {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.no-message {
+  color: #666;
+  font-size: 14px;
 }
 
 .new-message-alert {

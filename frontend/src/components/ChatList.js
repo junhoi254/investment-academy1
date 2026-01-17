@@ -26,60 +26,41 @@ const enableAudio = () => {
   }
 };
 
-// TTS 음성 재생 (iOS 호환)
-const speakSignal = (text = 'Signal Alert') => {
-  try {
-    if ('speechSynthesis' in window) {
-      // 이전 음성 취소
-      window.speechSynthesis.cancel();
-      
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-US';
-      utterance.rate = 0.9;
-      utterance.pitch = 1.2;
-      utterance.volume = 1;
-      
-      window.speechSynthesis.speak(utterance);
-      console.log('🔊 TTS 재생:', text);
-    }
-  } catch (e) {
-    console.log('TTS 실패:', e);
-  }
-};
-
 // 사이렌 소리 생성 (Web Audio API)
-const playAlertSound = (type = 'signal') => {
+const playAlertSound = () => {
   try {
     if (!audioContext || audioContext.state === 'suspended') {
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
     }
     
-    if (type === 'signal') {
-      // 짧은 알림음
-      const duration = 0.5;
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + duration);
-      
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + duration);
-      
-      // TTS "Signal" 음성 재생
-      setTimeout(() => speakSignal('Signal! New trading signal!'), 100);
-      
-      console.log('🔊 알림음 + TTS 재생');
+    // 사이렌 소리 (상승-하강 반복)
+    const duration = 2;
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.type = 'sine';
+    gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+    
+    // 사이렌 주파수 변화
+    const now = audioContext.currentTime;
+    for (let i = 0; i < 4; i++) {
+      oscillator.frequency.setValueAtTime(600, now + i * 0.5);
+      oscillator.frequency.linearRampToValueAtTime(1000, now + i * 0.5 + 0.25);
+      oscillator.frequency.linearRampToValueAtTime(600, now + i * 0.5 + 0.5);
     }
+    
+    gainNode.gain.setValueAtTime(0.4, now);
+    gainNode.gain.linearRampToValueAtTime(0, now + duration);
+    
+    oscillator.start(now);
+    oscillator.stop(now + duration);
+    
+    console.log('🔊 사이렌 재생');
   } catch (e) {
     console.log('소리 재생 실패:', e);
-    // 실패해도 TTS 시도
-    speakSignal('Signal Alert');
   }
 };
 
@@ -167,6 +148,7 @@ function ChatList({ user, onLogout }) {
   const [lastSignal, setLastSignal] = useState(null);
   const [showSignalPopup, setShowSignalPopup] = useState(false);
   const [newMessageCount, setNewMessageCount] = useState(0);  // 새 메시지 개수
+  const [wsConnected, setWsConnected] = useState(false);  // 연결 상태
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
 
@@ -192,30 +174,32 @@ function ChatList({ user, onLogout }) {
   }, []);
 
   // 시그널 수신 처리
-  const handleSignal = useCallback((message) => {
-    // 시그널 메시지인지 확인 (BUY, SELL, OPEN 등 포함)
-    const content = message.content || '';
-    const isSignal = message.message_type === 'signal' || 
+  const handleSignal = useCallback((data) => {
+    console.log('📩 메시지 수신:', data);
+    
+    // 메시지 카운트 증가
+    setNewMessageCount(prev => prev + 1);
+    
+    // 시그널 메시지인지 확인
+    const content = data.content || '';
+    const isSignal = data.message_type === 'signal' || 
                      content.includes('BUY') || 
                      content.includes('SELL') ||
                      content.includes('OPEN') ||
                      content.includes('진입') ||
                      content.includes('포지션');
     
-    // 새 메시지 카운트 증가
-    setNewMessageCount(prev => prev + 1);
-    
     if (isSignal) {
       setLastSignal({
         content,
         time: new Date().toLocaleTimeString('ko-KR'),
-        room: message.room_name || '리딩방'
+        room: data.room_name || '리딩방'
       });
       setShowSignalPopup(true);
       
       // 소리 또는 진동
       if (soundEnabled) {
-        playAlertSound('signal');
+        playAlertSound();
         showNotification('🚨 시그널 알림', content.substring(0, 100));
       } else {
         vibrate([200, 100, 200, 100, 200]);
@@ -228,27 +212,62 @@ function ChatList({ user, onLogout }) {
 
   // WebSocket 연결 (유료방 시그널 수신)
   useEffect(() => {
-    if (!user || !paidRooms.length) return;
+    if (!user || !paidRooms.length) {
+      console.log('⚠️ WebSocket 연결 불가: user=', !!user, 'paidRooms=', paidRooms.length);
+      return;
+    }
     
     const connectWebSocket = (roomId) => {
       const token = localStorage.getItem('token');
       if (!token) return null;
       
+      console.log('🔌 WebSocket 연결 시도:', roomId);
       const ws = new WebSocket(`${WS_URL}/ws/chat/${roomId}?token=${token}`);
+      
+      ws.onopen = () => {
+        console.log('✅ WebSocket 연결됨');
+        setWsConnected(true);
+      };
       
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          if (data.type === 'message' && data.message) {
-            handleSignal(data.message);
+          console.log('📨 WebSocket 데이터:', data);
+          
+          // type이 message인 경우 처리
+          if (data.type === 'message') {
+            handleSignal({
+              content: data.content,
+              message_type: data.message_type,
+              user_name: data.user_name,
+              room_name: data.room_name
+            });
+          } else if (data.type === 'signal') {
+            handleSignal({
+              content: data.content,
+              message_type: 'signal'
+            });
           }
         } catch (e) {
           console.log('메시지 파싱 오류:', e);
         }
       };
       
+      ws.onclose = () => {
+        console.log('❌ WebSocket 연결 종료');
+        setWsConnected(false);
+        
+        // 5초 후 재연결
+        reconnectTimeoutRef.current = setTimeout(() => {
+          if (user && paidRooms.length) {
+            wsRef.current = connectWebSocket(paidRooms[0].id);
+          }
+        }, 5000);
+      };
+      
       ws.onerror = (error) => {
         console.log('WebSocket 오류:', error);
+        setWsConnected(false);
       };
       
       return ws;
@@ -405,9 +424,12 @@ function ChatList({ user, onLogout }) {
             >
               {soundEnabled ? '🔔 소리 ON' : '🔕 소리 OFF'}
             </button>
+            <span className={`ws-status ${wsConnected ? 'connected' : 'disconnected'}`}>
+              {wsConnected ? '● 연결됨' : '○ 대기중'}
+            </span>
           </div>
           <div className="notification-bar-right">
-            {newMessageCount > 0 && (
+            {newMessageCount > 0 ? (
               <div className="new-message-alert" onClick={() => {
                 setNewMessageCount(0);
                 if (paidRooms[0]) navigate(`/chat/${paidRooms[0].id}`);
@@ -415,6 +437,8 @@ function ChatList({ user, onLogout }) {
                 <span className="alert-icon">🚨</span>
                 <span className="alert-text">새 메시지 {newMessageCount}개</span>
               </div>
+            ) : (
+              <span className="no-message">메시지 없음</span>
             )}
           </div>
         </div>
