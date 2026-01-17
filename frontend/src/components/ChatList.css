@@ -809,107 +809,69 @@
   }
 }
 
-/* ========== 시그널 알림 스타일 ========== */
-
-/* 소리 토글 버튼 */
-.sound-toggle {
-  position: relative;
-}
-
-.sound-toggle.on {
-  background: rgba(34, 197, 94, 0.2) !important;
-  border-color: #22c55e !important;
-}
-
-.sound-toggle.off {
-  background: rgba(239, 68, 68, 0.2) !important;
-  border-color: #ef4444 !important;
-}
-
-/* 알림 뱃지 */
-.notification-badge {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  background: #ef4444;
-  color: white;
-  font-size: 11px;
-  font-weight: 700;
-  min-width: 18px;
-  height: 18px;
-  border-radius: 9px;
+/* ========== 상단 알림 바 ========== */
+.notification-bar {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  padding: 0 4px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-  animation: badgePulse 1s ease-in-out infinite;
-}
-
-@keyframes badgePulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-}
-
-/* 시그널 팝업 */
-.signal-popup {
-  position: fixed;
+  padding: 10px 15px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+  border-bottom: 1px solid #333;
+  position: sticky;
   top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding-top: 100px;
-  z-index: 9999;
-  animation: fadeIn 0.3s ease;
+  z-index: 100;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.signal-popup-content {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  border: 2px solid #e94560;
-  border-radius: 20px;
-  padding: 25px;
-  max-width: 400px;
-  width: 90%;
-  box-shadow: 0 0 50px rgba(233, 69, 96, 0.5);
-  animation: slideDown 0.3s ease, pulse 1s ease-in-out infinite;
-}
-
-@keyframes slideDown {
-  from { 
-    transform: translateY(-50px);
-    opacity: 0;
-  }
-  to { 
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-@keyframes pulse {
-  0%, 100% { box-shadow: 0 0 30px rgba(233, 69, 96, 0.5); }
-  50% { box-shadow: 0 0 60px rgba(233, 69, 96, 0.8); }
-}
-
-.signal-popup-header {
+.notification-bar-left {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 15px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.signal-icon {
-  font-size: 28px;
+.notification-bar-right {
+  display: flex;
+  align-items: center;
+}
+
+.sound-toggle-btn {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 2px solid;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.sound-toggle-btn.on {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: #22c55e;
+  color: #22c55e;
+}
+
+.sound-toggle-btn.off {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.new-message-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+  border-radius: 20px;
+  cursor: pointer;
+  animation: alertPulse 1s ease-in-out infinite;
+}
+
+@keyframes alertPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 10px rgba(233, 69, 96, 0.5); }
+  50% { transform: scale(1.05); box-shadow: 0 0 20px rgba(233, 69, 96, 0.8); }
+}
+
+.alert-icon {
+  font-size: 16px;
   animation: shake 0.5s ease-in-out infinite;
 }
 
@@ -918,72 +880,28 @@
   50% { transform: rotate(10deg); }
 }
 
-.signal-title {
-  color: #e94560;
-  font-size: 20px;
-  font-weight: 700;
-  flex: 1;
-}
-
-.signal-time {
-  color: #888;
-  font-size: 14px;
-}
-
-.signal-popup-body {
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 12px;
-  padding: 15px;
-  margin-bottom: 15px;
-}
-
-.signal-popup-body p {
-  color: #fff;
-  margin: 5px 0;
-  font-size: 15px;
-  line-height: 1.6;
-}
-
-.signal-popup-body p:first-child {
-  font-size: 18px;
-  font-weight: 600;
-  color: #22c55e;
-}
-
-.signal-popup-button {
-  width: 100%;
-  padding: 15px;
-  background: linear-gradient(135deg, #e94560 0%, #0f3460 100%);
+.alert-text {
   color: white;
-  border: none;
-  border-radius: 12px;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.signal-popup-button:hover {
-  transform: scale(1.02);
-  box-shadow: 0 5px 20px rgba(233, 69, 96, 0.4);
 }
 
 /* 모바일 최적화 */
 @media (max-width: 768px) {
-  .signal-popup {
-    padding-top: 50px;
+  .notification-bar {
+    padding: 8px 10px;
   }
   
-  .signal-popup-content {
-    margin: 0 15px;
-    padding: 20px;
+  .sound-toggle-btn {
+    padding: 6px 12px;
+    font-size: 12px;
   }
   
-  .signal-title {
-    font-size: 18px;
+  .new-message-alert {
+    padding: 6px 12px;
   }
   
-  .signal-popup-body p {
-    font-size: 14px;
+  .alert-text {
+    font-size: 12px;
   }
 }

@@ -702,49 +702,75 @@ def get_fallback_data():
     ]
 
 @app.post("/api/market/update")
-async def update_market_data(
-    request: Request,
-    body: MarketUpdateRequest,
-):
-    """MT4 EA에서 시장 데이터 수신"""
+async def update_market_data(request: Request):
+    """MT4 EA에서 시장 데이터 수신 (유연한 파싱)"""
     global market_analysis_cache
     
+    try:
+        # Raw JSON 파싱
+        raw_body = await request.body()
+        body_str = raw_body.decode('utf-8')
+        print(f"📥 받은 원본 데이터: {body_str[:500]}...")
+        
+        body = json.loads(body_str)
+    except Exception as e:
+        print(f"❌ JSON 파싱 오류: {e}")
+        return {"success": False, "error": f"JSON 파싱 오류: {str(e)}"}
+    
     # API 키 검증
-    api_key = body.api_key
+    api_key = body.get('api_key')
     if not api_key:
         api_key = request.headers.get("X-API-Key")
     if not api_key:
         api_key = request.headers.get("x-api-key")
     
     if api_key != MT4_API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid API Key")
+        print(f"❌ API 키 불일치: {api_key}")
+        return {"success": False, "error": "Invalid API Key"}
     
-    # 데이터 저장
+    # 데이터 파싱
+    raw_data = body.get('data', [])
+    if not raw_data:
+        return {"success": False, "error": "데이터가 없습니다"}
+    
     data_list = []
-    for item in body.data:
-        # reasons 문자열을 리스트로 변환
-        reasons = item.reasons.split(',') if item.reasons else []
-        reasons = [r.strip() for r in reasons if r.strip()]
-        
-        data_list.append({
-            'symbol_code': item.symbol_code,
-            'symbol': item.symbol,
-            'price': item.price,
-            'direction': item.direction,
-            'score': item.score,
-            'rsi': item.rsi,
-            'ma5': item.ma5,
-            'ma20': item.ma20,
-            'macd': item.macd,
-            'macd_signal': item.macd_signal,
-            'reasons': reasons
-        })
+    for item in raw_data:
+        try:
+            # reasons 문자열을 리스트로 변환
+            reasons = item.get('reasons', '')
+            if isinstance(reasons, str):
+                reasons = [r.strip() for r in reasons.split(',') if r.strip()]
+            elif isinstance(reasons, list):
+                reasons = reasons
+            else:
+                reasons = []
+            
+            data_list.append({
+                'symbol_code': str(item.get('symbol_code', '')),
+                'symbol': str(item.get('symbol', '')),
+                'price': float(item.get('price', 0)),
+                'direction': str(item.get('direction', 'NEUTRAL')),
+                'score': int(float(item.get('score', 0))),
+                'rsi': float(item.get('rsi', 50)),
+                'ma5': float(item.get('ma5', 0)) if item.get('ma5') else None,
+                'ma20': float(item.get('ma20', 0)) if item.get('ma20') else None,
+                'macd': float(item.get('macd', 0)) if item.get('macd') else None,
+                'macd_signal': float(item.get('macd_signal', 0)) if item.get('macd_signal') else None,
+                'reasons': reasons
+            })
+            print(f"   ✅ 파싱 성공: {item.get('symbol_code')}")
+        except Exception as e:
+            print(f"   ⚠️ 항목 파싱 오류: {item} - {e}")
+            continue
+    
+    if not data_list:
+        return {"success": False, "error": "유효한 데이터가 없습니다"}
     
     market_analysis_cache['data'] = data_list
     market_analysis_cache['updated_at'] = datetime.now()
     market_analysis_cache['source'] = 'mt4'
     
-    print(f"📊 MT4 시황 데이터 수신: {len(data_list)}개 종목")
+    print(f"📊 MT4 시황 데이터 수신 완료: {len(data_list)}개 종목")
     for item in data_list:
         print(f"   {item['symbol_code']}: {item['direction']} (점수: {item['score']})")
     

@@ -26,7 +26,27 @@ const enableAudio = () => {
   }
 };
 
-// 사이렌 소리 생성 (Web Audio API)
+// TTS 음성 재생 (iOS 호환)
+const speakSignal = (text = 'Signal Alert') => {
+  try {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.9;
+      utterance.pitch = 1.2;
+      utterance.volume = 1;
+      
+      window.speechSynthesis.speak(utterance);
+      console.log('🔊 TTS 재생:', text);
+    }
+  } catch (e) {
+    console.log('TTS 실패:', e);
+  }
+};
+
+// 알림음 + TTS (Web Audio API)
 const playAlertSound = (type = 'signal') => {
   try {
     if (!audioContext || audioContext.state === 'suspended') {
@@ -34,8 +54,8 @@ const playAlertSound = (type = 'signal') => {
     }
     
     if (type === 'signal') {
-      // 사이렌 소리 (상승-하강 반복)
-      const duration = 2;
+      // 짧은 알림음
+      const duration = 0.5;
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
       
@@ -43,26 +63,21 @@ const playAlertSound = (type = 'signal') => {
       gainNode.connect(audioContext.destination);
       
       oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
       gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + duration);
       
-      // 사이렌 주파수 변화
-      const now = audioContext.currentTime;
-      for (let i = 0; i < 4; i++) {
-        oscillator.frequency.setValueAtTime(800, now + i * 0.5);
-        oscillator.frequency.linearRampToValueAtTime(1200, now + i * 0.5 + 0.25);
-        oscillator.frequency.linearRampToValueAtTime(800, now + i * 0.5 + 0.5);
-      }
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + duration);
       
-      gainNode.gain.setValueAtTime(0.3, now);
-      gainNode.gain.linearRampToValueAtTime(0, now + duration);
+      // TTS "Signal" 음성 재생
+      setTimeout(() => speakSignal('Signal! New trading signal!'), 100);
       
-      oscillator.start(now);
-      oscillator.stop(now + duration);
-      
-      console.log('🔊 사이렌 재생');
+      console.log('🔊 알림음 + TTS 재생');
     }
   } catch (e) {
     console.log('소리 재생 실패:', e);
+    speakSignal('Signal Alert');
   }
 };
 

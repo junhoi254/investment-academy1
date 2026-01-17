@@ -26,6 +26,27 @@ const enableAudio = () => {
   }
 };
 
+// TTS 음성 재생 (iOS 호환)
+const speakSignal = (text = 'Signal Alert') => {
+  try {
+    if ('speechSynthesis' in window) {
+      // 이전 음성 취소
+      window.speechSynthesis.cancel();
+      
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.9;
+      utterance.pitch = 1.2;
+      utterance.volume = 1;
+      
+      window.speechSynthesis.speak(utterance);
+      console.log('🔊 TTS 재생:', text);
+    }
+  } catch (e) {
+    console.log('TTS 실패:', e);
+  }
+};
+
 // 사이렌 소리 생성 (Web Audio API)
 const playAlertSound = (type = 'signal') => {
   try {
@@ -34,8 +55,8 @@ const playAlertSound = (type = 'signal') => {
     }
     
     if (type === 'signal') {
-      // 사이렌 소리 (상승-하강 반복)
-      const duration = 2;
+      // 짧은 알림음
+      const duration = 0.5;
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
       
@@ -43,26 +64,22 @@ const playAlertSound = (type = 'signal') => {
       gainNode.connect(audioContext.destination);
       
       oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
       gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + duration);
       
-      // 사이렌 주파수 변화
-      const now = audioContext.currentTime;
-      for (let i = 0; i < 4; i++) {
-        oscillator.frequency.setValueAtTime(800, now + i * 0.5);
-        oscillator.frequency.linearRampToValueAtTime(1200, now + i * 0.5 + 0.25);
-        oscillator.frequency.linearRampToValueAtTime(800, now + i * 0.5 + 0.5);
-      }
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + duration);
       
-      gainNode.gain.setValueAtTime(0.3, now);
-      gainNode.gain.linearRampToValueAtTime(0, now + duration);
+      // TTS "Signal" 음성 재생
+      setTimeout(() => speakSignal('Signal! New trading signal!'), 100);
       
-      oscillator.start(now);
-      oscillator.stop(now + duration);
-      
-      console.log('🔊 사이렌 재생');
+      console.log('🔊 알림음 + TTS 재생');
     }
   } catch (e) {
     console.log('소리 재생 실패:', e);
+    // 실패해도 TTS 시도
+    speakSignal('Signal Alert');
   }
 };
 
@@ -375,27 +392,39 @@ function ChatList({ user, onLogout }) {
 
   return (
     <div className="chat-list-container">
+      {/* 상단 알림 바 - 항상 표시 */}
+      {user && (
+        <div className="notification-bar">
+          <div className="notification-bar-left">
+            <button 
+              className={`sound-toggle-btn ${soundEnabled ? 'on' : 'off'}`}
+              onClick={() => {
+                enableAudio();
+                setSoundEnabled(!soundEnabled);
+              }}
+            >
+              {soundEnabled ? '🔔 소리 ON' : '🔕 소리 OFF'}
+            </button>
+          </div>
+          <div className="notification-bar-right">
+            {newMessageCount > 0 && (
+              <div className="new-message-alert" onClick={() => {
+                setNewMessageCount(0);
+                if (paidRooms[0]) navigate(`/chat/${paidRooms[0].id}`);
+              }}>
+                <span className="alert-icon">🚨</span>
+                <span className="alert-text">새 메시지 {newMessageCount}개</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      
       <header className="chat-header">
         <h1>투자학당</h1>
         <div className="header-actions">
           {user && (
             <>
-              {/* 소리 알림 토글 + 새 메시지 뱃지 */}
-              <button 
-                className={`icon-button sound-toggle ${soundEnabled ? 'on' : 'off'}`}
-                onClick={() => {
-                  enableAudio();  // 클릭 시 오디오 활성화
-                  setSoundEnabled(!soundEnabled);
-                  setNewMessageCount(0);  // 클릭하면 카운트 리셋
-                }}
-                title={soundEnabled ? '소리 끄기' : '소리 켜기'}
-              >
-                {soundEnabled ? '🔔' : '🔕'}
-                {newMessageCount > 0 && (
-                  <span className="notification-badge">{newMessageCount > 99 ? '99+' : newMessageCount}</span>
-                )}
-              </button>
-              
               <div className="user-info">
                 <span className="user-name">{user.name}</span>
                 {user.role !== 'member' && (
