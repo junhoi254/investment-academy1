@@ -173,14 +173,14 @@ function ChatList({ user, onLogout }) {
     }
   }, []);
 
-  // 시그널 수신 처리
+  // 메시지 수신 처리
   const handleSignal = useCallback((data) => {
     console.log('📩 메시지 수신:', data);
     
-    // 메시지 카운트 증가
+    // 모든 메시지 카운트 증가
     setNewMessageCount(prev => prev + 1);
     
-    // 시그널 메시지인지 확인
+    // 시그널 메시지인지 확인 (시그널만 소리)
     const content = data.content || '';
     const isSignal = data.message_type === 'signal' || 
                      content.includes('BUY') || 
@@ -189,6 +189,7 @@ function ChatList({ user, onLogout }) {
                      content.includes('진입') ||
                      content.includes('포지션');
     
+    // 시그널일 때만 팝업 + 소리
     if (isSignal) {
       setLastSignal({
         content,
