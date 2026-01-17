@@ -957,12 +957,13 @@ MT4_API_KEY = os.getenv("MT4_API_KEY", "tajum-signal-2026")
 
 class SignalData(BaseModel):
     symbol: str
-    action: str  # BUY, SELL, CLOSE, MODIFY
+    action: str  # BUY, SELL, CLOSE, CLOSE_BUY, CLOSE_SELL, MODIFY
     price: float
     sl: Optional[float] = None
     tp: Optional[float] = None
     ticket: Optional[int] = None
     comment: Optional[str] = None
+    direction: Optional[str] = None  # BUY 또는 SELL (종료 시 원래 포지션 방향)
 
 @app.post("/api/signal/receive")
 async def receive_signal(
@@ -993,28 +994,58 @@ async def _receive_signal_internal(signal: SignalData, db: Session, api_key: str
     if api_key != MT4_API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API Key")
     
-    # 액션에 따른 이모지 및 메시지 생성
-    action_emoji = {
-        "BUY": "🟢 매수",
-        "SELL": "🔴 매도", 
-        "CLOSE": "⬜ 청산",
-        "MODIFY": "🔄 수정"
-    }
+    action_upper = signal.action.upper()
     
-    action_text = action_emoji.get(signal.action.upper(), signal.action)
-    
-    # 시그널 메시지 구성
-    message_lines = [
-        f"📊 【{signal.symbol}】 {action_text}",
-        f"💰 진입가: {signal.price}"
-    ]
-    
-    if signal.sl:
-        message_lines.append(f"🛑 손절가: {signal.sl}")
-    if signal.tp:
-        message_lines.append(f"🎯 목표가: {signal.tp}")
-    if signal.comment:
-        message_lines.append(f"📝 {signal.comment}")
+    # 포지션 방향 (BUY/SELL)
+    if action_upper in ["BUY", "SELL"]:
+        # 진입 시그널
+        direction = "매수(BUY)" if action_upper == "BUY" else "매도(SELL)"
+        message_lines = [
+            "OPEN",
+            f"🟢 포지션 진입 {direction}",
+            "",
+            f"📊 【{signal.symbol}】",
+            "",
+            f"💰 진입가: {signal.price}"
+        ]
+        if signal.sl:
+            message_lines.append(f"🛑 손절가: {signal.sl}")
+        if signal.tp:
+            message_lines.append(f"🎯 목표가: {signal.tp}")
+        message_lines.append("")
+        message_lines.append("투자의 책임은 본인에게 있습니다.")
+        
+    elif action_upper in ["CLOSE", "CLOSE_BUY", "CLOSE_SELL"]:
+        # 종료 시그널
+        if action_upper == "CLOSE_BUY":
+            direction = "매수(BUY)"
+        elif action_upper == "CLOSE_SELL":
+            direction = "매도(SELL)"
+        elif signal.direction:
+            direction = "매수(BUY)" if signal.direction.upper() == "BUY" else "매도(SELL)"
+        elif signal.comment and "BUY" in signal.comment.upper():
+            direction = "매수(BUY)"
+        elif signal.comment and "SELL" in signal.comment.upper():
+            direction = "매도(SELL)"
+        else:
+            direction = ""
+        
+        message_lines = [
+            "CLOSE",
+            f"🔴 포지션 종료 {direction}".strip(),
+            "",
+            f"📊 【{signal.symbol}】",
+            "",
+            "투자의 책임은 본인에게 있습니다."
+        ]
+    else:
+        # 기타 (MODIFY 등)
+        message_lines = [
+            f"🔄 【{signal.symbol}】 {action_upper}",
+            f"💰 가격: {signal.price}",
+            "",
+            "투자의 책임은 본인에게 있습니다."
+        ]
     
     message_content = "\n".join(message_lines)
     
