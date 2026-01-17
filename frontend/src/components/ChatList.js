@@ -1,9 +1,65 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './ChatList.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const WS_URL = API_URL.replace('http', 'ws');
+
+// 사이렌 소리 생성 (Web Audio API)
+const playAlertSound = (type = 'signal') => {
+  try {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    
+    if (type === 'signal') {
+      // 사이렌 소리 (상승-하강 반복)
+      const duration = 2;
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.type = 'sine';
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      
+      // 사이렌 주파수 변화
+      const now = audioContext.currentTime;
+      for (let i = 0; i < 4; i++) {
+        oscillator.frequency.setValueAtTime(800, now + i * 0.5);
+        oscillator.frequency.linearRampToValueAtTime(1200, now + i * 0.5 + 0.25);
+        oscillator.frequency.linearRampToValueAtTime(800, now + i * 0.5 + 0.5);
+      }
+      
+      gainNode.gain.setValueAtTime(0.3, now);
+      gainNode.gain.linearRampToValueAtTime(0, now + duration);
+      
+      oscillator.start(now);
+      oscillator.stop(now + duration);
+    }
+  } catch (e) {
+    console.log('소리 재생 실패:', e);
+  }
+};
+
+// 진동 (모바일)
+const vibrate = (pattern = [200, 100, 200, 100, 200]) => {
+  if ('vibrate' in navigator) {
+    navigator.vibrate(pattern);
+  }
+};
+
+// 브라우저 알림
+const showNotification = (title, body) => {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification(title, {
+      body,
+      icon: '📈',
+      tag: 'signal-alert',
+      requireInteraction: true
+    });
+  }
+};
 
 // 기술적분석 교육 데이터
 const EDUCATION_DATA = {
@@ -61,6 +117,104 @@ function ChatList({ user, onLogout }) {
   const [marketData, setMarketData] = useState([]);
   const [marketLoading, setMarketLoading] = useState(false);
   const [marketUpdatedAt, setMarketUpdatedAt] = useState(null);
+  
+  // 알림 상태
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    const saved = localStorage.getItem('signalSoundEnabled');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+  const [lastSignal, setLastSignal] = useState(null);
+  const [showSignalPopup, setShowSignalPopup] = useState(false);
+  const wsRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
+
+  // 소리 설정 저장
+  useEffect(() => {
+    localStorage.setItem('signalSoundEnabled', JSON.stringify(soundEnabled));
+  }, [soundEnabled]);
+
+  // 브라우저 알림 권한 요청
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  // 시그널 수신 처리
+  const handleSignal = useCallback((message) => {
+    // 시그널 메시지인지 확인 (BUY, SELL, OPEN 등 포함)
+    const content = message.content || '';
+    const isSignal = message.message_type === 'signal' || 
+                     content.includes('BUY') || 
+                     content.includes('SELL') ||
+                     content.includes('OPEN') ||
+                     content.includes('진입') ||
+                     content.includes('포지션');
+    
+    if (isSignal) {
+      setLastSignal({
+        content,
+        time: new Date().toLocaleTimeString('ko-KR'),
+        room: message.room_name || '리딩방'
+      });
+      setShowSignalPopup(true);
+      
+      // 소리 또는 진동
+      if (soundEnabled) {
+        playAlertSound('signal');
+        showNotification('🚨 시그널 알림', content.substring(0, 100));
+      } else {
+        vibrate([200, 100, 200, 100, 200]);
+      }
+      
+      // 5초 후 팝업 자동 닫기
+      setTimeout(() => setShowSignalPopup(false), 5000);
+    }
+  }, [soundEnabled]);
+
+  // WebSocket 연결 (유료방 시그널 수신)
+  useEffect(() => {
+    if (!user || !paidRooms.length) return;
+    
+    const connectWebSocket = (roomId) => {
+      const token = localStorage.getItem('token');
+      if (!token) return null;
+      
+      const ws = new WebSocket(`${WS_URL}/ws/chat/${roomId}?token=${token}`);
+      
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'message' && data.message) {
+            handleSignal(data.message);
+          }
+        } catch (e) {
+          console.log('메시지 파싱 오류:', e);
+        }
+      };
+      
+      ws.onerror = (error) => {
+        console.log('WebSocket 오류:', error);
+      };
+      
+      return ws;
+    };
+    
+    // 첫 번째 유료방에 연결 (시그널 수신용)
+    const firstPaidRoom = paidRooms[0];
+    if (firstPaidRoom) {
+      wsRef.current = connectWebSocket(firstPaidRoom.id);
+    }
+    
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+    };
+  }, [user, paidRooms, handleSignal]);
 
   useEffect(() => {
     loadFreeRooms();
@@ -189,6 +343,15 @@ function ChatList({ user, onLogout }) {
         <div className="header-actions">
           {user && (
             <>
+              {/* 소리 알림 토글 */}
+              <button 
+                className={`icon-button sound-toggle ${soundEnabled ? 'on' : 'off'}`}
+                onClick={() => setSoundEnabled(!soundEnabled)}
+                title={soundEnabled ? '소리 끄기' : '소리 켜기'}
+              >
+                {soundEnabled ? '🔔' : '🔕'}
+              </button>
+              
               <div className="user-info">
                 <span className="user-name">{user.name}</span>
                 {user.role !== 'member' && (
@@ -227,32 +390,40 @@ function ChatList({ user, onLogout }) {
           )}
         </div>
       </header>
+      
+      {/* 시그널 알림 팝업 */}
+      {showSignalPopup && lastSignal && (
+        <div className="signal-popup" onClick={() => setShowSignalPopup(false)}>
+          <div className="signal-popup-content">
+            <div className="signal-popup-header">
+              <span className="signal-icon">🚨</span>
+              <span className="signal-title">시그널 알림</span>
+              <span className="signal-time">{lastSignal.time}</span>
+            </div>
+            <div className="signal-popup-body">
+              {lastSignal.content.split('\n').map((line, i) => (
+                <p key={i}>{line}</p>
+              ))}
+            </div>
+            <button 
+              className="signal-popup-button"
+              onClick={() => {
+                setShowSignalPopup(false);
+                // 해당 방으로 이동
+                if (paidRooms[0]) {
+                  navigate(`/chat/${paidRooms[0].id}`);
+                }
+              }}
+            >
+              채팅방 가기
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="rooms-container">
         
-        {/* 1. 교장쌤 소식방 (무료 → 유입) */}
-        <section className="room-section">
-          <h2>📌 교장쌤 소식방</h2>
-          <p className="section-description">교장쌤만 메세지 작성</p>
-          <div className="room-list">
-            {freeRooms.map(room => (
-              <div 
-                key={room.id} 
-                className="room-card free-room"
-                onClick={() => handleRoomClick(room.id, true)}
-              >
-                <div className="room-icon">{getRoomIcon(room.room_type)}</div>
-                <div className="room-info">
-                  <h3>{room.name}</h3>
-                  <p>{room.description}</p>
-                </div>
-                <div className="room-badge">무료</div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* 2. 📚 투자교육 (가치 제공 → 신뢰) */}
+        {/* 📚 교육 섹션 */}
         <section className="room-section education-section">
           <h2>📚 투자 교육</h2>
           <p className="section-description">해외선물 기초부터 고급까지</p>
@@ -416,7 +587,29 @@ function ChatList({ user, onLogout }) {
           )}
         </section>
 
-        {/* 3. 교장쌤 한마디 (소통 → 관계) - 승인된 회원 + 관리자/스태프 */}
+        {/* 교장쌤 소식방 */}
+        <section className="room-section">
+          <h2>📌 교장쌤 소식방</h2>
+          <p className="section-description">교장쌤만 메세지 작성</p>
+          <div className="room-list">
+            {freeRooms.map(room => (
+              <div 
+                key={room.id} 
+                className="room-card free-room"
+                onClick={() => handleRoomClick(room.id, true)}
+              >
+                <div className="room-icon">{getRoomIcon(room.room_type)}</div>
+                <div className="room-info">
+                  <h3>{room.name}</h3>
+                  <p>{room.description}</p>
+                </div>
+                <div className="room-badge">무료</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 교장쌤 한마디 - 승인된 회원 + 관리자/스태프 */}
         {user && (user.is_approved || user.role === 'admin' || user.role === 'staff') && (
           <section className="room-section">
             <h2>💬 교장쌤 한마디</h2>
@@ -437,7 +630,7 @@ function ChatList({ user, onLogout }) {
           </section>
         )}
 
-        {/* 4. VVIP 프로젝트반 (유료 → 전환) */}
+        {/* VVIP 프로젝트반 */}
         {user && (
           <section className="room-section">
             <h2>💎 VVIP 프로젝트반</h2>
