@@ -543,9 +543,16 @@ async def receive_mt4_signal(
     # if api_key != MT4_API_KEY:
     #     raise HTTPException(status_code=403, detail="Invalid API key")
     
-    room = db.query(models.Room).filter(models.Room.room_type == "futures").first()
+    # 해외선물 리딩방 찾기 (room_id=3 또는 room_type 검색)
+    room = db.query(models.Room).filter(models.Room.id == 3).first()
+    if not room:
+        room = db.query(models.Room).filter(models.Room.room_type == "futures").first()
+    if not room:
+        room = db.query(models.Room).filter(models.Room.room_type == "해외선물").first()
     if not room:
         raise HTTPException(status_code=404, detail="해외선물 채팅방을 찾을 수 없습니다")
+    
+    print(f"[MT4 SIGNAL] Sending to room: id={room.id}, name={room.name}")
     
     # 시그널 타입에 따른 이모지
     if action == "BUY":
@@ -583,20 +590,16 @@ async def receive_mt4_signal(
     db.commit()
     db.refresh(message)
     
-    # WebSocket으로 실시간 전송
+    # WebSocket으로 실시간 전송 (일반 채팅과 동일한 형식)
     await manager.send_message({
-        "type": "new_message",
-        "message": {
-            "id": message.id,
-            "content": content,
-            "message_type": "signal",
-            "created_at": message.created_at.isoformat(),
-            "user": {
-                "id": admin.id if admin else 1,
-                "name": admin.name if admin else "시스템",
-                "role": "admin"
-            }
-        }
+        "type": "message",
+        "id": message.id,
+        "user_id": admin.id if admin else 1,
+        "user_name": admin.name if admin else "시스템",
+        "user_role": "admin",
+        "content": content,
+        "message_type": "signal",
+        "timestamp": message.created_at.isoformat()
     }, str(room.id))
     
     return {"success": True, "message": "시그널이 전송되었습니다"}
