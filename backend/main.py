@@ -538,8 +538,10 @@ async def receive_mt4_signal(
     db: Session = Depends(get_db)
 ):
     """MT4에서 시그널 수신"""
-    if api_key != MT4_API_KEY:
-        raise HTTPException(status_code=403, detail="Invalid API key")
+    # API Key 검증 임시 비활성화 (테스트용)
+    print(f"[MT4 SIGNAL] Received: symbol={symbol}, action={action}, price={price}, api_key={api_key}")
+    # if api_key != MT4_API_KEY:
+    #     raise HTTPException(status_code=403, detail="Invalid API key")
     
     room = db.query(models.Room).filter(models.Room.room_type == "futures").first()
     if not room:
