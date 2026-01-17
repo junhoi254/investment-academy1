@@ -376,7 +376,7 @@ function AdminPanel({ user, onLogout }) {
           className={activeTab === 'threads' ? 'active' : ''}
           onClick={() => setActiveTab('threads')}
         >
-          💬 훈장님 한마디
+          💬 교장쌤 한마디
         </button>
       </div>
 
@@ -720,7 +720,7 @@ function AdminPanel({ user, onLogout }) {
         {/* 쓰레드 관리 */}
         {activeTab === 'threads' && (
           <div className="threads-section">
-            <h2>💬 훈장님 한마디 관리</h2>
+            <h2>💬 교장쌤 한마디 관리</h2>
             
             {/* 쓰레드 생성 폼 */}
             <div className="thread-form-container">

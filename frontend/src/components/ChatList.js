@@ -131,10 +131,10 @@ function ChatList({ user, onLogout }) {
       </header>
 
       <div className="rooms-container">
-        {/* 무료 채팅방 */}
+        {/* 교장쌤 소식방 */}
         <section className="room-section">
-          <h2>📌 무료 채팅방</h2>
-          <p className="section-description">누구나 볼 수 있습니다 (일타훈장님/서브관리자만 메시지 작성)</p>
+          <h2>📌 교장쌤 소식방</h2>
+          <p className="section-description">교장쌤만 메세지 작성</p>
           <div className="room-list">
             {freeRooms.map(room => (
               <div 
@@ -153,11 +153,11 @@ function ChatList({ user, onLogout }) {
           </div>
         </section>
 
-        {/* 훈장님 한마디 - 승인된 회원 + 관리자/스태프 */}
+        {/* 교장쌤 한마디 - 승인된 회원 + 관리자/스태프 */}
         {user && (user.is_approved || user.role === 'admin' || user.role === 'staff') && (
           <section className="room-section">
-            <h2>💬 훈장님 한마디</h2>
-            <p className="section-description">중요 공지사항 및 정보 (회원 댓글 작성 가능)</p>
+            <h2>💬 교장쌤 한마디</h2>
+            <p className="section-description">중요 공지사항 및 정보</p>
             <div className="room-list">
               <div 
                 className="room-card notice-board"
@@ -165,8 +165,8 @@ function ChatList({ user, onLogout }) {
               >
                 <div className="room-icon">💬</div>
                 <div className="room-info">
-                  <h3>훈장님 한마디</h3>
-                  <p>일타훈장님의 소중한 한마디</p>
+                  <h3>교장쌤 한마디</h3>
+                  <p>교장쌤의 소중한 한마디</p>
                 </div>
                 <div className="room-badge notice">NEW</div>
               </div>
@@ -174,11 +174,11 @@ function ChatList({ user, onLogout }) {
           </section>
         )}
 
-        {/* 유료 채팅방 */}
+        {/* VVIP 프로젝트반 */}
         {user && (
           <section className="room-section">
-            <h2>💎 유료 채팅방</h2>
-            <p className="section-description">회원 전용 리딩방 (일타훈장님/서브관리자만 메시지 작성)</p>
+            <h2>💎 VVIP 프로젝트반</h2>
+            <p className="section-description"></p>
             <div className="room-list">
               {paidRooms.map(room => (
                 <div 
@@ -202,7 +202,7 @@ function ChatList({ user, onLogout }) {
         {!user && (
           <section className="room-section">
             <div className="login-prompt">
-              <h2>🔒 유료 채팅방을 이용하시려면</h2>
+              <h2>🔒 VVIP 프로젝트반을 이용하시려면</h2>
               <p>로그인 후 이용하실 수 있습니다</p>
               <button 
                 className="prompt-login-button"
@@ -220,7 +220,7 @@ function ChatList({ user, onLogout }) {
         <div className="modal-overlay" onClick={() => setShowLogin(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h3>로그인이 필요합니다</h3>
-            <p>유료 채팅방은 로그인 후 이용하실 수 있습니다.</p>
+            <p>VVIP 프로젝트반은 로그인 후 이용하실 수 있습니다.</p>
             <div className="modal-buttons">
               <button onClick={() => navigate('/login')}>로그인</button>
               <button onClick={() => setShowLogin(false)}>취소</button>
