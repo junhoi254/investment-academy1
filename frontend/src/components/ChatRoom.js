@@ -916,7 +916,7 @@ function ChatRoom({ user, onLogin, onLogout }) {
                     disabled={!connected}
                     title="진입대기 메시지"
                   >
-                    🚨 진입대기
+                    🚨
                   </button>
                 )}
               </div>
