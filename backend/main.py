@@ -524,6 +524,81 @@ async def websocket_chat(websocket: WebSocket, room_id: int, token: str):
 
 # ==================== MT4 API ====================
 
+MT4_API_KEY = "tajum-signal-2026"  # API 키 (MT4 EA에서 동일하게 사용)
+
+@app.post("/api/mt4/signal")
+async def receive_mt4_signal(
+    symbol: str,
+    action: str,  # BUY, SELL, CLOSE
+    price: float,
+    sl: float = 0,
+    tp: float = 0,
+    lots: float = 0,
+    api_key: str = "",
+    db: Session = Depends(get_db)
+):
+    """MT4에서 시그널 수신"""
+    if api_key != MT4_API_KEY:
+        raise HTTPException(status_code=403, detail="Invalid API key")
+    
+    room = db.query(models.Room).filter(models.Room.room_type == "futures").first()
+    if not room:
+        raise HTTPException(status_code=404, detail="해외선물 채팅방을 찾을 수 없습니다")
+    
+    # 시그널 타입에 따른 이모지
+    if action == "BUY":
+        emoji = "🟢"
+        action_text = "매수 (LONG)"
+    elif action == "SELL":
+        emoji = "🔴"
+        action_text = "매도 (SHORT)"
+    else:
+        emoji = "⚪"
+        action_text = "청산"
+    
+    content = f"""{emoji} {action_text} 시그널
+
+📊 종목: {symbol}
+💰 진입가: {price}"""
+    
+    if sl > 0:
+        content += f"\n🛑 손절가: {sl}"
+    if tp > 0:
+        content += f"\n🎯 목표가: {tp}"
+    if lots > 0:
+        content += f"\n📦 수량: {lots} Lots"
+    
+    # 관리자 ID로 메시지 저장
+    admin = db.query(models.User).filter(models.User.role == "admin").first()
+    
+    message = models.Message(
+        room_id=room.id,
+        user_id=admin.id if admin else 1,
+        content=content,
+        message_type="signal"
+    )
+    db.add(message)
+    db.commit()
+    db.refresh(message)
+    
+    # WebSocket으로 실시간 전송
+    await manager.send_message({
+        "type": "new_message",
+        "message": {
+            "id": message.id,
+            "content": content,
+            "message_type": "signal",
+            "created_at": message.created_at.isoformat(),
+            "user": {
+                "id": admin.id if admin else 1,
+                "name": admin.name if admin else "시스템",
+                "role": "admin"
+            }
+        }
+    }, str(room.id))
+    
+    return {"success": True, "message": "시그널이 전송되었습니다"}
+
 @app.post("/api/mt4/position")
 async def receive_mt4_position(position_data: schemas.MT4Position, api_key: str, db: Session = Depends(get_db)):
     if api_key != "your-mt4-api-key":
