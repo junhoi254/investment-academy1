@@ -5,14 +5,6 @@ import './ChatList.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
-// 오늘의 글로벌 매매 데이터 (관리자가 수정 가능하도록 나중에 DB로 이동 가능)
-const GLOBAL_TRADING_DATA = [
-  { symbol: 'EURUSD', name: '유로/달러', direction: 'SELL', description: '저항선 근접, 하락 압력' },
-  { symbol: 'US100', name: '나스닥', direction: 'BUY', description: '기술주 강세, 상승 추세' },
-  { symbol: 'HK50', name: '항셍', direction: 'BUY', description: '중국 경기 부양 기대' },
-  { symbol: 'XAUUSD', name: '골드', direction: 'SELL', description: '달러 강세, 금 약세' },
-];
-
 // 기술적분석 교육 데이터
 const EDUCATION_DATA = {
   beginner: {
@@ -64,6 +56,11 @@ function ChatList({ user, onLogout }) {
   const [showEducation, setShowEducation] = useState(false);
   const [selectedLevel, setSelectedLevel] = useState(null);
   const [selectedLesson, setSelectedLesson] = useState(null);
+  
+  // 시장 분석 상태
+  const [marketData, setMarketData] = useState([]);
+  const [marketLoading, setMarketLoading] = useState(false);
+  const [marketUpdatedAt, setMarketUpdatedAt] = useState(null);
 
   useEffect(() => {
     loadFreeRooms();
@@ -71,6 +68,43 @@ function ChatList({ user, onLogout }) {
       loadPaidRooms();
     }
   }, [user]);
+
+  // 시장 분석 데이터 로드
+  const loadMarketAnalysis = async () => {
+    setMarketLoading(true);
+    try {
+      const response = await axios.get(`${API_URL}/api/market/analysis`);
+      if (response.data.success) {
+        setMarketData(response.data.data);
+        setMarketUpdatedAt(response.data.updated_at);
+      }
+    } catch (error) {
+      console.error('시장 분석 로딩 실패:', error);
+    } finally {
+      setMarketLoading(false);
+    }
+  };
+
+  // 시장 분석 강제 갱신 (관리자)
+  const refreshMarketAnalysis = async () => {
+    if (!user || user.role !== 'admin') return;
+    
+    setMarketLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API_URL}/api/market/refresh`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.data.success) {
+        setMarketData(response.data.data);
+        setMarketUpdatedAt(response.data.updated_at);
+      }
+    } catch (error) {
+      console.error('시장 분석 갱신 실패:', error);
+    } finally {
+      setMarketLoading(false);
+    }
+  };
 
   const loadFreeRooms = async () => {
     try {
@@ -205,8 +239,12 @@ function ChatList({ user, onLogout }) {
             <div 
               className={`room-card education-card ${showGlobalTrading ? 'active' : ''}`}
               onClick={() => {
-                setShowGlobalTrading(!showGlobalTrading);
+                const newState = !showGlobalTrading;
+                setShowGlobalTrading(newState);
                 setShowEducation(false);
+                if (newState && marketData.length === 0) {
+                  loadMarketAnalysis();
+                }
               }}
             >
               <div className="room-icon">📊</div>
@@ -240,27 +278,61 @@ function ChatList({ user, onLogout }) {
           {showGlobalTrading && (
             <div className="global-trading-content">
               <div className="trading-header">
-                <h3>📈 오늘의 시황 분석</h3>
-                <span className="trading-date">{new Date().toLocaleDateString('ko-KR')}</span>
+                <h3>📈 AI 자동 시황 분석</h3>
+                <div className="trading-header-right">
+                  {marketUpdatedAt && (
+                    <span className="trading-date">
+                      {new Date(marketUpdatedAt).toLocaleString('ko-KR')}
+                    </span>
+                  )}
+                  {user && user.role === 'admin' && (
+                    <button 
+                      className="refresh-btn"
+                      onClick={refreshMarketAnalysis}
+                      disabled={marketLoading}
+                    >
+                      {marketLoading ? '⏳' : '🔄'}
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="trading-list">
-                {GLOBAL_TRADING_DATA.map((item, index) => (
-                  <div key={index} className={`trading-item ${item.direction.toLowerCase()}`}>
-                    <div className="trading-symbol">
-                      <span className="symbol-name">{item.symbol}</span>
-                      <span className="symbol-desc">{item.name}</span>
+              
+              {marketLoading ? (
+                <div className="trading-loading">분석 중... ⏳</div>
+              ) : marketData.length > 0 ? (
+                <div className="trading-list">
+                  {marketData.map((item, index) => (
+                    <div key={index} className={`trading-item ${item.direction.toLowerCase()}`}>
+                      <div className="trading-symbol">
+                        <span className="symbol-name">{item.symbol_code}</span>
+                        <span className="symbol-desc">{item.symbol}</span>
+                      </div>
+                      <div className="trading-direction">
+                        <span className={`direction-badge ${item.direction.toLowerCase()}`}>
+                          {item.direction === 'BUY' ? '🟢 BUY 우세' : 
+                           item.direction === 'SELL' ? '🔴 SELL 우세' : '⚪ 중립'}
+                        </span>
+                      </div>
+                      <div className="trading-analysis">
+                        <div className="trading-score">점수: {item.score > 0 ? '+' : ''}{item.score}</div>
+                        <div className="trading-indicators">
+                          RSI: {item.rsi} | 현재가: {item.price}
+                        </div>
+                        <div className="trading-reasons">
+                          {item.reasons?.join(' • ')}
+                        </div>
+                      </div>
                     </div>
-                    <div className="trading-direction">
-                      <span className={`direction-badge ${item.direction.toLowerCase()}`}>
-                        {item.direction === 'BUY' ? '🟢 BUY 우세' : '🔴 SELL 우세'}
-                      </span>
-                    </div>
-                    <div className="trading-description">{item.description}</div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="trading-empty">
+                  데이터를 불러올 수 없습니다. 다시 시도해주세요.
+                </div>
+              )}
+              
               <div className="trading-disclaimer">
-                ⚠️ 본 시황은 참고용이며, 투자 판단은 본인 책임입니다.
+                ⚠️ 본 분석은 기술적 지표 기반 자동 분석이며, 투자 판단은 본인 책임입니다.
               </div>
             </div>
           )}

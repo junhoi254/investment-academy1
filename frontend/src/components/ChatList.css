@@ -708,3 +708,103 @@
     padding: 15px;
   }
 }
+
+/* ========== 시장 분석 추가 스타일 ========== */
+.trading-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #333;
+}
+
+.trading-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.refresh-btn {
+  background: #333;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.3s;
+}
+
+.refresh-btn:hover {
+  background: #444;
+  transform: rotate(180deg);
+}
+
+.refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.trading-loading,
+.trading-empty {
+  text-align: center;
+  padding: 40px;
+  color: #888;
+  font-size: 16px;
+}
+
+.trading-item {
+  display: grid;
+  grid-template-columns: 120px 130px 1fr;
+  gap: 15px;
+  align-items: center;
+  padding: 15px;
+  background: #222;
+  border-radius: 8px;
+  border-left: 4px solid #444;
+}
+
+.trading-item.neutral {
+  border-left-color: #888;
+}
+
+.direction-badge.neutral {
+  background: rgba(136, 136, 136, 0.2);
+  color: #888;
+}
+
+.trading-analysis {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trading-score {
+  font-weight: 600;
+  color: #fff;
+}
+
+.trading-indicators {
+  font-size: 12px;
+  color: #888;
+}
+
+.trading-reasons {
+  font-size: 11px;
+  color: #666;
+}
+
+/* 모바일 */
+@media (max-width: 768px) {
+  .trading-item {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .trading-header {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+}

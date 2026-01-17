@@ -612,6 +612,176 @@ async def websocket_chat(websocket: WebSocket, room_id: int, token: str):
     finally:
         db.close()
 
+# ==================== 시장 분석 API ====================
+
+import yfinance as yf
+from datetime import datetime, timedelta
+import numpy as np
+
+# 분석할 종목 설정
+TRADING_SYMBOLS = {
+    'EURUSD': {'ticker': 'EURUSD=X', 'name': '유로/달러'},
+    'US100': {'ticker': 'NQ=F', 'name': '나스닥'},
+    'HK50': {'ticker': '^HSI', 'name': '항셍'},
+    'XAUUSD': {'ticker': 'GC=F', 'name': '골드'},
+}
+
+def calculate_rsi(prices, period=14):
+    """RSI 계산"""
+    deltas = np.diff(prices)
+    gain = np.where(deltas > 0, deltas, 0)
+    loss = np.where(deltas < 0, -deltas, 0)
+    
+    avg_gain = np.mean(gain[:period])
+    avg_loss = np.mean(loss[:period])
+    
+    if avg_loss == 0:
+        return 100
+    
+    rs = avg_gain / avg_loss
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
+
+def calculate_macd(prices):
+    """MACD 계산"""
+    if len(prices) < 26:
+        return 0, 0
+    
+    exp12 = np.mean(prices[-12:])  # 단순화된 EMA
+    exp26 = np.mean(prices[-26:])
+    macd = exp12 - exp26
+    signal = np.mean(prices[-9:]) if len(prices) >= 9 else macd
+    return macd, signal
+
+def analyze_symbol(ticker, symbol_name):
+    """종목 분석"""
+    try:
+        # 최근 30일 데이터 가져오기
+        data = yf.download(ticker, period='30d', interval='1d', progress=False)
+        
+        if data.empty or len(data) < 20:
+            return None
+        
+        closes = data['Close'].values.flatten()
+        current_price = float(closes[-1])
+        
+        # 기술적 지표 계산
+        ma5 = float(np.mean(closes[-5:])) if len(closes) >= 5 else current_price
+        ma20 = float(np.mean(closes[-20:])) if len(closes) >= 20 else current_price
+        rsi = calculate_rsi(closes)
+        macd, signal = calculate_macd(closes)
+        
+        # 점수 계산
+        score = 0
+        reasons = []
+        
+        # 1. 가격 vs 20일 이평선
+        if current_price > ma20:
+            score += 1
+            reasons.append("20일선 위")
+        else:
+            score -= 1
+            reasons.append("20일선 아래")
+        
+        # 2. 5일선 vs 20일선 (골든/데드크로스)
+        if ma5 > ma20:
+            score += 1
+            reasons.append("단기 상승추세")
+        else:
+            score -= 1
+            reasons.append("단기 하락추세")
+        
+        # 3. RSI
+        if rsi > 50:
+            score += 1
+            reasons.append(f"RSI {rsi:.0f}")
+        else:
+            score -= 1
+            reasons.append(f"RSI {rsi:.0f}")
+        
+        # 4. MACD
+        if macd > signal:
+            score += 1
+            reasons.append("MACD 상승")
+        else:
+            score -= 1
+            reasons.append("MACD 하락")
+        
+        # 방향 결정
+        if score >= 2:
+            direction = 'BUY'
+        elif score <= -2:
+            direction = 'SELL'
+        else:
+            direction = 'NEUTRAL'
+        
+        return {
+            'symbol': symbol_name,
+            'direction': direction,
+            'score': score,
+            'price': round(current_price, 4),
+            'ma20': round(ma20, 4),
+            'rsi': round(rsi, 1),
+            'reasons': reasons
+        }
+        
+    except Exception as e:
+        print(f"분석 오류 ({ticker}): {e}")
+        return None
+
+# 캐시 저장 (5분마다 갱신)
+market_analysis_cache = {
+    'data': [],
+    'updated_at': None
+}
+
+@app.get("/api/market/analysis")
+async def get_market_analysis():
+    """시장 분석 데이터 가져오기"""
+    global market_analysis_cache
+    
+    # 캐시 확인 (5분 이내면 캐시 반환)
+    if market_analysis_cache['updated_at']:
+        cache_age = datetime.now() - market_analysis_cache['updated_at']
+        if cache_age.seconds < 300 and market_analysis_cache['data']:
+            return {
+                'success': True,
+                'data': market_analysis_cache['data'],
+                'updated_at': market_analysis_cache['updated_at'].isoformat(),
+                'cached': True
+            }
+    
+    # 새로 분석
+    results = []
+    for symbol, info in TRADING_SYMBOLS.items():
+        analysis = analyze_symbol(info['ticker'], info['name'])
+        if analysis:
+            analysis['symbol_code'] = symbol
+            results.append(analysis)
+    
+    # 캐시 업데이트
+    if results:
+        market_analysis_cache['data'] = results
+        market_analysis_cache['updated_at'] = datetime.now()
+    
+    return {
+        'success': True,
+        'data': results,
+        'updated_at': datetime.now().isoformat(),
+        'cached': False
+    }
+
+@app.post("/api/market/refresh")
+async def refresh_market_analysis(current_user: models.User = Depends(get_current_user)):
+    """시장 분석 강제 갱신 (관리자만)"""
+    if current_user.role != 'admin':
+        raise HTTPException(status_code=403, detail="관리자만 갱신 가능합니다")
+    
+    global market_analysis_cache
+    market_analysis_cache['updated_at'] = None  # 캐시 무효화
+    
+    return await get_market_analysis()
+
 # ==================== MT4 API ====================
 
 MT4_API_KEY = "tajum-signal-2026"  # API 키 (MT4 EA에서 동일하게 사용)
