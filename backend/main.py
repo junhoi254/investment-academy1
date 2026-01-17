@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException, status, UploadFile, File, Header, Request
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException, status, UploadFile, File, Header, Request, Query
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -971,17 +971,20 @@ async def receive_signal(
     request: Request,
     signal: SignalData, 
     db: Session = Depends(get_db),
-    api_key: Optional[str] = None  # Query parameter로도 받기
+    api_key: Optional[str] = Query(None, description="API Key")
 ):
     """MT4 EA로부터 시그널 수신"""
     # API Key 우선순위: Query param > Body > Header
-    key = api_key or signal.api_key
+    key = api_key
+    if not key and signal.api_key:
+        key = signal.api_key
     if not key:
         key = request.headers.get("X-API-Key")
     if not key:
         key = request.headers.get("x-api-key")
-    if not key:
-        key = request.headers.get("X-Api-Key")
+    
+    print(f"[SIGNAL DEBUG] api_key(query)={api_key}, signal.api_key={signal.api_key}, header={request.headers.get('X-API-Key')}, final_key={key}")
+    
     return await _receive_signal_internal(signal, db, key)
 
 @app.post("/api/signal")
@@ -989,17 +992,22 @@ async def receive_signal_v2(
     request: Request,
     signal: SignalData, 
     db: Session = Depends(get_db),
-    api_key: Optional[str] = None
+    api_key: Optional[str] = Query(None, description="API Key")
 ):
     """MT4 EA로부터 시그널 수신 (대체 경로)"""
-    key = api_key or signal.api_key
+    key = api_key
+    if not key and signal.api_key:
+        key = signal.api_key
     if not key:
         key = request.headers.get("X-API-Key")
     if not key:
         key = request.headers.get("x-api-key")
-    if not key:
-        key = request.headers.get("X-Api-Key")
     return await _receive_signal_internal(signal, db, key)
+
+@app.get("/api/signal/test")
+async def test_signal():
+    """시그널 API 테스트"""
+    return {"status": "ok", "expected_key": MT4_API_KEY[:4] + "****"}
 
 async def _receive_signal_internal(signal: SignalData, db: Session, api_key: str = None):
     """시그널 처리 내부 함수"""
