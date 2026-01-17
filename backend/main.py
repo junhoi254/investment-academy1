@@ -209,7 +209,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "user": {"id": user.id, "phone": user.phone, "name": user.name, "role": user.role}
+        "user": {"id": user.id, "phone": user.phone, "name": user.name, "role": user.role, "is_approved": user.is_approved, "expiry_date": user.expiry_date.isoformat() if user.expiry_date else None}
     }
 
 @app.get("/api/me", response_model=schemas.UserResponse)
