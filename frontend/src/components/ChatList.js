@@ -230,7 +230,29 @@ function ChatList({ user, onLogout }) {
 
       <div className="rooms-container">
         
-        {/* 📚 교육 섹션 */}
+        {/* 1. 교장쌤 소식방 (무료 → 유입) */}
+        <section className="room-section">
+          <h2>📌 교장쌤 소식방</h2>
+          <p className="section-description">교장쌤만 메세지 작성</p>
+          <div className="room-list">
+            {freeRooms.map(room => (
+              <div 
+                key={room.id} 
+                className="room-card free-room"
+                onClick={() => handleRoomClick(room.id, true)}
+              >
+                <div className="room-icon">{getRoomIcon(room.room_type)}</div>
+                <div className="room-info">
+                  <h3>{room.name}</h3>
+                  <p>{room.description}</p>
+                </div>
+                <div className="room-badge">무료</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 2. 📚 투자교육 (가치 제공 → 신뢰) */}
         <section className="room-section education-section">
           <h2>📚 투자 교육</h2>
           <p className="section-description">해외선물 기초부터 고급까지</p>
@@ -394,29 +416,7 @@ function ChatList({ user, onLogout }) {
           )}
         </section>
 
-        {/* 교장쌤 소식방 */}
-        <section className="room-section">
-          <h2>📌 교장쌤 소식방</h2>
-          <p className="section-description">교장쌤만 메세지 작성</p>
-          <div className="room-list">
-            {freeRooms.map(room => (
-              <div 
-                key={room.id} 
-                className="room-card free-room"
-                onClick={() => handleRoomClick(room.id, true)}
-              >
-                <div className="room-icon">{getRoomIcon(room.room_type)}</div>
-                <div className="room-info">
-                  <h3>{room.name}</h3>
-                  <p>{room.description}</p>
-                </div>
-                <div className="room-badge">무료</div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* 교장쌤 한마디 - 승인된 회원 + 관리자/스태프 */}
+        {/* 3. 교장쌤 한마디 (소통 → 관계) - 승인된 회원 + 관리자/스태프 */}
         {user && (user.is_approved || user.role === 'admin' || user.role === 'staff') && (
           <section className="room-section">
             <h2>💬 교장쌤 한마디</h2>
@@ -437,7 +437,7 @@ function ChatList({ user, onLogout }) {
           </section>
         )}
 
-        {/* VVIP 프로젝트반 */}
+        {/* 4. VVIP 프로젝트반 (유료 → 전환) */}
         {user && (
           <section className="room-section">
             <h2>💎 VVIP 프로젝트반</h2>
