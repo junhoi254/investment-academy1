@@ -252,12 +252,13 @@
 }
 
 .signal-message {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
   padding: 16px;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(240, 147, 251, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   max-width: 100%;
   color: white;
+  border: 1px solid #444;
 }
 
 .signal-header {
@@ -267,6 +268,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  color: #00ff88;
 }
 
 .signal-header .delete-message-btn {
@@ -279,7 +281,7 @@
 }
 
 .signal-content {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
   padding: 12px;
   border-radius: 8px;
   white-space: pre-wrap;
@@ -287,6 +289,7 @@
   font-size: 13px;
   line-height: 1.6;
   margin-bottom: 10px;
+  color: #ffffff;
 }
 
 /* ========== 입력 영역 ========== */
