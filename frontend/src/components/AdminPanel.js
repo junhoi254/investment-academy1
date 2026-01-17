@@ -315,7 +315,7 @@ function AdminPanel({ user, onLogout }) {
 
   const getRoleName = (role) => {
     const roles = {
-      admin: '일타훈장님',
+      admin: '타점잡는 교장쌤',
       staff: '서브관리자',
       member: '회원'
     };

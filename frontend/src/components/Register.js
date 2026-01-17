@@ -83,7 +83,7 @@ function Register() {
       <div className="register-container">
         <div className="register-box success-box">
           <div className="register-logo">
-            <img src="/hunjang-logo.png" alt="일타훈장님" />
+            <img src="/hunjang-logo.png" alt="타점잡는 교장쌤" />
           </div>
           <h1>✅ 회원가입 완료</h1>
           <p>관리자 승인 후 이용하실 수 있습니다.</p>
@@ -97,7 +97,7 @@ function Register() {
     <div className="register-container">
       <div className="register-box">
         <div className="register-logo">
-          <img src="/hunjang-logo.png" alt="일타훈장님" />
+          <img src="/hunjang-logo.png" alt="타점잡는 교장쌤" />
         </div>
         <h1>회원가입</h1>
         <p className="register-subtitle">투자학당에 오신 것을 환영합니다</p>

@@ -418,7 +418,7 @@ function ChatRoom({ user, onLogin, onLogout }) {
 
   const getUserRoleBadge = (role) => {
     const badges = {
-      admin: { text: '일타훈장님', class: 'admin' },
+      admin: { text: '타점잡는 교장쌤', class: 'admin' },
       subadmin: { text: '서브관리자', class: 'staff' },
       staff: { text: '서브관리자', class: 'staff' },
       member: { text: '회원', class: 'member' },
@@ -630,11 +630,13 @@ function ChatRoom({ user, onLogin, onLogout }) {
           {user ? (
             <>
               <span className="user-name">{user.name}</span>
-              <button className="logout-button" onClick={onLogout}>로그아웃</button>
+              <button className="icon-button logout-button" onClick={onLogout} title="로그아웃">
+                🚪
+              </button>
             </>
           ) : (
-            <button className="login-button" onClick={() => navigate('/login')}>
-              로그인
+            <button className="icon-button login-button" onClick={() => navigate('/login')} title="로그인">
+              👤
             </button>
           )}
         </div>

@@ -52,10 +52,10 @@ function Login({ onLogin }) {
     <div className="login-container">
       <div className="login-box">
         <div className="login-logo">
-          <img src="/hunjang-logo.png" alt="일타훈장님" />
+          <img src="/hunjang-logo.png" alt="타점잡는 교장쌤" />
         </div>
         <h1>투자학당 로그인</h1>
-        <p className="login-subtitle">일타훈장님의 트레이딩 리딩방</p>
+        <p className="login-subtitle">타점잡는 교장쌤의 트레이딩 리딩방</p>
         
         <form onSubmit={handleSubmit}>
           <div className="form-group">

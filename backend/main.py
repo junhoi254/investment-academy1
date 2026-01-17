@@ -311,8 +311,9 @@ async def reset_admin_temp(db: Session = Depends(get_db)):
     if admin:
         admin.phone = "010-6512-6542"
         admin.password = get_password_hash("Rlawnsghl1!")
+        admin.name = "타점잡는 교장쌤"
         db.commit()
-        return {"message": "관리자 변경 완료!", "phone": "010-6512-6542"}
+        return {"message": "관리자 변경 완료!", "phone": "010-6512-6542", "name": "타점잡는 교장쌤"}
     return {"message": "관리자를 찾을 수 없습니다"}
 
 @app.put("/api/admin/rooms/{room_id}")
@@ -924,7 +925,7 @@ async def startup_event():
             admin = models.User(
                 phone="010-6512-6542",
                 password=get_password_hash("Rlawnsghl1!"),
-                name="일타훈장님",
+                name="타점잡는 교장쌤",
                 role="admin",
                 is_approved=True
             )
@@ -935,7 +936,7 @@ async def startup_event():
         rooms = db.query(models.Room).all()
         if not rooms:
             default_rooms = [
-                models.Room(name="투자학당!! 일타훈장님!!", room_type="notice", is_free=True, description="누구나 볼 수 있는 공지방"),
+                models.Room(name="교장쌤 소식방", room_type="notice", is_free=True, description="교장쌤만 메세지 작성"),
                 models.Room(name="주식 리딩방", room_type="stock", is_free=False, description="주식 매매 시그널"),
                 models.Room(name="해외선물 리딩방", room_type="futures", is_free=False, description="해외선물 매매 시그널"),
                 models.Room(name="코인선물 리딩방", room_type="crypto", is_free=False, description="코인선물 매매 시그널"),

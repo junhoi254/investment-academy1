@@ -122,7 +122,7 @@ function ThreadList({ user }) {
 
   const getRoleBadge = (role) => {
     const badges = {
-      admin: { text: '훈장님', class: 'admin' },
+      admin: { text: '교장쌤', class: 'admin' },
       staff: { text: '스태프', class: 'staff' },
       member: { text: '', class: 'member' }
     };
@@ -211,7 +211,7 @@ function ThreadList({ user }) {
         <button className="back-button" onClick={() => navigate('/chat')}>
           ← 뒤로
         </button>
-        <h1>훈장님 한마디</h1>
+        <h1>교장쌤 한마디</h1>
         <div className="header-spacer"></div>
       </header>
 

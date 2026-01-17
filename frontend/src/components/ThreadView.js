@@ -111,7 +111,7 @@ function ThreadView({ user }) {
 
   const getRoleBadge = (role) => {
     const badges = {
-      admin: { text: '일타훈장님', class: 'admin' },
+      admin: { text: '타점잡는 교장쌤', class: 'admin' },
       staff: { text: '서브관리자', class: 'staff' },
       member: { text: '회원', class: 'member' }
     };

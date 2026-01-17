@@ -95,7 +95,7 @@ function ChatList({ user, onLogout }) {
                 <span className="user-name">{user.name}</span>
                 {user.role !== 'member' && (
                   <span className="user-role">
-                    {user.role === 'admin' ? '훈장님' : '스태프'}
+                    {user.role === 'admin' ? '교장쌤' : '스태프'}
                   </span>
                 )}
                 {user.role === 'member' && getDaysRemaining() !== null && (
