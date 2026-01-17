@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException, status, UploadFile, File
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException, status, UploadFile, File, Header, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -949,6 +949,129 @@ async def delete_thread_comment(
     db.commit()
     
     return {"message": "댓글이 삭제되었습니다"}
+
+# ==================== MT4 시그널 API ====================
+
+# MT4 시그널 API Key
+MT4_API_KEY = os.getenv("MT4_API_KEY", "tajum-signal-2026")
+
+class SignalData(BaseModel):
+    symbol: str
+    action: str  # BUY, SELL, CLOSE, MODIFY
+    price: float
+    sl: Optional[float] = None
+    tp: Optional[float] = None
+    ticket: Optional[int] = None
+    comment: Optional[str] = None
+
+@app.post("/api/signal/receive")
+async def receive_signal(
+    request: Request,
+    signal: SignalData, 
+    db: Session = Depends(get_db),
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key")
+):
+    """MT4 EA로부터 시그널 수신"""
+    # Header에서 API Key 가져오기 (다양한 방식 지원)
+    api_key = x_api_key or request.headers.get("X-API-Key") or request.headers.get("x-api-key")
+    return await _receive_signal_internal(signal, db, api_key)
+
+@app.post("/api/signal")
+async def receive_signal_v2(
+    request: Request,
+    signal: SignalData, 
+    db: Session = Depends(get_db),
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key")
+):
+    """MT4 EA로부터 시그널 수신 (대체 경로)"""
+    api_key = x_api_key or request.headers.get("X-API-Key") or request.headers.get("x-api-key")
+    return await _receive_signal_internal(signal, db, api_key)
+
+async def _receive_signal_internal(signal: SignalData, db: Session, api_key: str = None):
+    """시그널 처리 내부 함수"""
+    # API Key 검증
+    if api_key != MT4_API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
+    
+    # 액션에 따른 이모지 및 메시지 생성
+    action_emoji = {
+        "BUY": "🟢 매수",
+        "SELL": "🔴 매도", 
+        "CLOSE": "⬜ 청산",
+        "MODIFY": "🔄 수정"
+    }
+    
+    action_text = action_emoji.get(signal.action.upper(), signal.action)
+    
+    # 시그널 메시지 구성
+    message_lines = [
+        f"📊 【{signal.symbol}】 {action_text}",
+        f"💰 진입가: {signal.price}"
+    ]
+    
+    if signal.sl:
+        message_lines.append(f"🛑 손절가: {signal.sl}")
+    if signal.tp:
+        message_lines.append(f"🎯 목표가: {signal.tp}")
+    if signal.comment:
+        message_lines.append(f"📝 {signal.comment}")
+    
+    message_content = "\n".join(message_lines)
+    
+    # 해외선물 리딩방 찾기 (room_type='futures' 또는 id=3)
+    room = db.query(models.Room).filter(models.Room.room_type == "futures").first()
+    if not room:
+        room = db.query(models.Room).filter(models.Room.id == 3).first()
+    if not room:
+        raise HTTPException(status_code=404, detail="해외선물 리딩방을 찾을 수 없습니다")
+    
+    # 관리자 찾기
+    admin = db.query(models.User).filter(models.User.role == "admin").first()
+    if not admin:
+        raise HTTPException(status_code=500, detail="관리자 계정을 찾을 수 없습니다")
+    
+    # 메시지 저장
+    new_message = models.Message(
+        room_id=room.id,
+        user_id=admin.id,
+        content=message_content,
+        message_type="signal"
+    )
+    db.add(new_message)
+    db.commit()
+    db.refresh(new_message)
+    
+    # WebSocket으로 브로드캐스트
+    broadcast_data = {
+        "type": "message",
+        "message": {
+            "id": new_message.id,
+            "room_id": room.id,
+            "user_id": admin.id,
+            "content": message_content,
+            "message_type": "signal",
+            "created_at": new_message.created_at.isoformat(),
+            "user": {
+                "id": admin.id,
+                "name": admin.name,
+                "role": admin.role
+            }
+        }
+    }
+    
+    await manager.send_message(broadcast_data, str(room.id))
+    
+    return {
+        "success": True,
+        "message": "시그널이 전송되었습니다",
+        "signal_id": new_message.id,
+        "room_id": room.id
+    }
+
+@app.get("/api/signal/test")
+async def test_signal_endpoint():
+    """시그널 API 테스트용 엔드포인트"""
+    return {"status": "ok", "message": "시그널 API가 정상 작동 중입니다"}
 
 # ==================== 설정 API ====================
 
