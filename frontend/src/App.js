@@ -7,6 +7,8 @@ import ChatRoom from './components/ChatRoom';
 import ThreadList from './components/ThreadList';
 import ThreadView from './components/ThreadView';
 import AdminPanel from './components/AdminPanel';
+import GlobalTrading from './components/GlobalTrading';
+import TechAnalysis from './components/TechAnalysis';
 import './App.css';
 
 function App() {
@@ -72,6 +74,16 @@ function App() {
           <Route 
             path="/thread/:threadId" 
             element={<ThreadView user={user} />} 
+          />
+          
+          {/* 시황분석 & 기술적분석 라우트 */}
+          <Route 
+            path="/global-trading" 
+            element={<GlobalTrading user={user} />} 
+          />
+          <Route 
+            path="/tech-analysis" 
+            element={<TechAnalysis />} 
           />
           
           {/* 관리자 라우트 */}
