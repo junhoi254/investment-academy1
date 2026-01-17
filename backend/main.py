@@ -614,9 +614,18 @@ async def websocket_chat(websocket: WebSocket, room_id: int, token: str):
 
 # ==================== 시장 분석 API ====================
 
-import yfinance as yf
-from datetime import datetime, timedelta
 import numpy as np
+
+# yfinance import 시도
+YFINANCE_AVAILABLE = False
+try:
+    import yfinance as yf
+    YFINANCE_AVAILABLE = True
+    print("✅ yfinance 모듈 로드 성공")
+except ImportError as e:
+    print(f"⚠️ yfinance 모듈 없음: {e}")
+except Exception as e:
+    print(f"⚠️ yfinance 로드 오류: {e}")
 
 # 분석할 종목 설정
 TRADING_SYMBOLS = {
@@ -629,38 +638,55 @@ TRADING_SYMBOLS = {
 
 def calculate_rsi(prices, period=14):
     """RSI 계산"""
-    deltas = np.diff(prices)
-    gain = np.where(deltas > 0, deltas, 0)
-    loss = np.where(deltas < 0, -deltas, 0)
-    
-    avg_gain = np.mean(gain[:period])
-    avg_loss = np.mean(loss[:period])
-    
-    if avg_loss == 0:
-        return 100
-    
-    rs = avg_gain / avg_loss
-    rsi = 100 - (100 / (1 + rs))
-    return rsi
+    try:
+        deltas = np.diff(prices)
+        gain = np.where(deltas > 0, deltas, 0)
+        loss = np.where(deltas < 0, -deltas, 0)
+        
+        avg_gain = np.mean(gain[:period])
+        avg_loss = np.mean(loss[:period])
+        
+        if avg_loss == 0:
+            return 100
+        
+        rs = avg_gain / avg_loss
+        rsi = 100 - (100 / (1 + rs))
+        return rsi
+    except:
+        return 50
 
 def calculate_macd(prices):
     """MACD 계산"""
-    if len(prices) < 26:
+    try:
+        if len(prices) < 26:
+            return 0, 0
+        
+        exp12 = np.mean(prices[-12:])  # 단순화된 EMA
+        exp26 = np.mean(prices[-26:])
+        macd = exp12 - exp26
+        signal = np.mean(prices[-9:]) if len(prices) >= 9 else macd
+        return macd, signal
+    except:
         return 0, 0
-    
-    exp12 = np.mean(prices[-12:])  # 단순화된 EMA
-    exp26 = np.mean(prices[-26:])
-    macd = exp12 - exp26
-    signal = np.mean(prices[-9:]) if len(prices) >= 9 else macd
-    return macd, signal
 
 def analyze_symbol(ticker, symbol_name):
     """종목 분석"""
-    try:
-        # 최근 30일 데이터 가져오기
-        data = yf.download(ticker, period='30d', interval='1d', progress=False)
+    if not YFINANCE_AVAILABLE:
+        print(f"❌ yfinance 사용 불가 - {ticker} 분석 스킵")
+        return None
         
-        if data.empty or len(data) < 20:
+    try:
+        print(f"📊 분석 시작: {ticker} ({symbol_name})")
+        
+        # 최근 30일 데이터 가져오기
+        data = yf.download(ticker, period='30d', interval='1d', progress=False, timeout=10)
+        
+        if data.empty:
+            print(f"⚠️ 데이터 없음: {ticker}")
+            return None
+            
+        if len(data) < 20:
+            print(f"⚠️ 데이터 부족 ({len(data)}일): {ticker}")
             return None
         
         closes = data['Close'].values.flatten()
@@ -716,6 +742,8 @@ def analyze_symbol(ticker, symbol_name):
         else:
             direction = 'NEUTRAL'
         
+        print(f"✅ 분석 완료: {ticker} -> {direction} (점수: {score})")
+        
         return {
             'symbol': symbol_name,
             'direction': direction,
@@ -727,19 +755,29 @@ def analyze_symbol(ticker, symbol_name):
         }
         
     except Exception as e:
-        print(f"분석 오류 ({ticker}): {e}")
+        print(f"❌ 분석 오류 ({ticker}): {type(e).__name__}: {e}")
         return None
 
 # 캐시 저장 (5분마다 갱신)
 market_analysis_cache = {
     'data': [],
-    'updated_at': None
+    'updated_at': None,
+    'error': None
 }
 
 @app.get("/api/market/analysis")
 async def get_market_analysis():
     """시장 분석 데이터 가져오기"""
     global market_analysis_cache
+    
+    # yfinance 사용 불가시 에러 반환
+    if not YFINANCE_AVAILABLE:
+        return {
+            'success': False,
+            'data': [],
+            'error': 'yfinance 모듈이 설치되지 않았습니다. pip install yfinance 실행 필요.',
+            'updated_at': datetime.now().isoformat()
+        }
     
     # 캐시 확인 (5분 이내면 캐시 반환)
     if market_analysis_cache['updated_at']:
@@ -753,23 +791,35 @@ async def get_market_analysis():
             }
     
     # 새로 분석
+    print("🔄 시장 분석 시작...")
     results = []
+    errors = []
+    
     for symbol, info in TRADING_SYMBOLS.items():
-        analysis = analyze_symbol(info['ticker'], info['name'])
-        if analysis:
-            analysis['symbol_code'] = symbol
-            results.append(analysis)
+        try:
+            analysis = analyze_symbol(info['ticker'], info['name'])
+            if analysis:
+                analysis['symbol_code'] = symbol
+                results.append(analysis)
+            else:
+                errors.append(f"{symbol}: 데이터 없음")
+        except Exception as e:
+            errors.append(f"{symbol}: {str(e)}")
+    
+    print(f"📈 분석 완료: {len(results)}개 성공, {len(errors)}개 실패")
     
     # 캐시 업데이트
     if results:
         market_analysis_cache['data'] = results
         market_analysis_cache['updated_at'] = datetime.now()
+        market_analysis_cache['error'] = None
     
     return {
-        'success': True,
+        'success': len(results) > 0,
         'data': results,
         'updated_at': datetime.now().isoformat(),
-        'cached': False
+        'cached': False,
+        'errors': errors if errors else None
     }
 
 @app.post("/api/market/refresh")
@@ -782,6 +832,17 @@ async def refresh_market_analysis(current_user: models.User = Depends(get_curren
     market_analysis_cache['updated_at'] = None  # 캐시 무효화
     
     return await get_market_analysis()
+
+# 디버깅용 API
+@app.get("/api/market/status")
+async def get_market_status():
+    """시장 분석 상태 확인 (디버깅용)"""
+    return {
+        'yfinance_available': YFINANCE_AVAILABLE,
+        'cache_has_data': len(market_analysis_cache['data']) > 0,
+        'cache_updated_at': market_analysis_cache['updated_at'].isoformat() if market_analysis_cache['updated_at'] else None,
+        'symbols': list(TRADING_SYMBOLS.keys())
+    }
 
 # ==================== MT4 API ====================
 
