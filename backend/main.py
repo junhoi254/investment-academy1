@@ -1049,10 +1049,15 @@ async def _receive_signal_internal(signal: SignalData, db: Session, api_key: str
     
     message_content = "\n".join(message_lines)
     
-    # 해외선물 리딩방 찾기 (room_type='futures' 또는 id=3)
-    room = db.query(models.Room).filter(models.Room.room_type == "futures").first()
+    # 해외선물 리딩방 찾기
+    room = db.query(models.Room).filter(models.Room.room_type == "해외선물").first()
     if not room:
-        room = db.query(models.Room).filter(models.Room.id == 3).first()
+        room = db.query(models.Room).filter(models.Room.room_type == "futures").first()
+    if not room:
+        # 방 이름으로 찾기
+        room = db.query(models.Room).filter(models.Room.name.contains("해외선물")).first()
+    if not room:
+        room = db.query(models.Room).filter(models.Room.name.contains("VVIP")).first()
     if not room:
         raise HTTPException(status_code=404, detail="해외선물 리딩방을 찾을 수 없습니다")
     
