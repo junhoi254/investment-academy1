@@ -6,10 +6,32 @@ import './ChatRoom.css';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 const WS_URL = process.env.REACT_APP_WS_URL || 'ws://localhost:8000';
 
+// 오디오 컨텍스트 (전역)
+let audioContext = null;
+let audioEnabled = false;
+
+// 오디오 활성화 (사용자 클릭 필요)
+const enableAudio = () => {
+  if (!audioEnabled) {
+    try {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+      audioEnabled = true;
+      console.log('🔊 오디오 활성화됨');
+    } catch (e) {
+      console.log('오디오 활성화 실패:', e);
+    }
+  }
+};
+
 // 사이렌 소리 생성 (Web Audio API)
 const playAlertSound = (type = 'signal') => {
   try {
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    if (!audioContext || audioContext.state === 'suspended') {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
     
     if (type === 'signal') {
       // 사이렌 소리 (상승-하강 반복)
@@ -36,6 +58,8 @@ const playAlertSound = (type = 'signal') => {
       
       oscillator.start(now);
       oscillator.stop(now + duration);
+      
+      console.log('🔊 사이렌 재생');
     }
   } catch (e) {
     console.log('소리 재생 실패:', e);
@@ -119,6 +143,15 @@ function ChatRoom({ user, onLogin, onLogout }) {
   useEffect(() => {
     localStorage.setItem('signalSoundEnabled', JSON.stringify(soundEnabled));
   }, [soundEnabled]);
+
+  // 페이지 클릭 시 오디오 활성화
+  useEffect(() => {
+    const handleClick = () => {
+      enableAudio();
+    };
+    document.addEventListener('click', handleClick, { once: true });
+    return () => document.removeEventListener('click', handleClick);
+  }, []);
 
   // 시그널 알림 처리
   const handleSignalAlert = useCallback((content) => {
@@ -841,7 +874,10 @@ function ChatRoom({ user, onLogin, onLogout }) {
           {user && (
             <button 
               className={`icon-button sound-toggle ${soundEnabled ? 'on' : 'off'}`}
-              onClick={() => setSoundEnabled(!soundEnabled)}
+              onClick={() => {
+                enableAudio();  // 클릭 시 오디오 활성화
+                setSoundEnabled(!soundEnabled);
+              }}
               title={soundEnabled ? '소리 끄기' : '소리 켜기'}
             >
               {soundEnabled ? '🔔' : '🔕'}
