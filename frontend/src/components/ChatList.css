@@ -108,18 +108,46 @@
 }
 
 .room-section {
-  margin-bottom: 50px;
+  margin-bottom: 20px;
 }
 
 .room-section h2 {
   color: #ffffff;
   margin-bottom: 10px;
-  font-size: 24px;
+  font-size: 18px;
 }
 
 .section-description {
   color: #888;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+/* VVIP 섹션 - 강조 */
+.vvip-section {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(236, 72, 153, 0.1) 100%);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  margin-bottom: 25px;
+}
+
+.vvip-section h2 {
+  font-size: 20px;
+  background: linear-gradient(135deg, #a855f7, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 컴팩트 섹션 - 제목 없음 */
+.compact-section {
+  margin-bottom: 10px;
+}
+
+.compact-section h2,
+.compact-section .section-description {
+  display: none;
 }
 
 .room-list {

@@ -521,87 +521,10 @@ function ChatList({ user, onLogout }) {
 
       <div className="rooms-container">
         
-        {/* 📚 교육 섹션 */}
-        <section className="room-section education-section">
-          <h2>📚 투자 교육</h2>
-          <p className="section-description">해외선물 기초부터 고급까지</p>
-          <div className="room-list education-buttons">
-            {/* 오늘의 글로벌 매매 버튼 - 페이지 이동 */}
-            <div 
-              className="room-card education-card"
-              onClick={() => navigate('/global-trading')}
-            >
-              <div className="room-icon">📊</div>
-              <div className="room-info">
-                <h3>오늘의 글로벌 매매</h3>
-                <p>주요 종목별 매매 방향</p>
-              </div>
-              <div className="room-badge global">시황</div>
-            </div>
-            
-            {/* 기술적분석 버튼 - 페이지 이동 */}
-            <div 
-              className="room-card education-card"
-              onClick={() => navigate('/tech-analysis')}
-            >
-              <div className="room-icon">📖</div>
-              <div className="room-info">
-                <h3>기술적분석</h3>
-                <p>초급 / 중급 / 고급 교육</p>
-              </div>
-              <div className="room-badge education">교육</div>
-            </div>
-          </div>
-        </section>
-
-        {/* 교장쌤 소식방 */}
-        <section className="room-section">
-          <h2>📌 교장쌤 소식방</h2>
-          <p className="section-description">교장쌤만 메세지 작성</p>
-          <div className="room-list">
-            {freeRooms.map(room => (
-              <div 
-                key={room.id} 
-                className="room-card free-room"
-                onClick={() => handleRoomClick(room.id, true)}
-              >
-                <div className="room-icon">{getRoomIcon(room.room_type)}</div>
-                <div className="room-info">
-                  <h3>{room.name}</h3>
-                  <p>{room.description}</p>
-                </div>
-                <div className="room-badge">무료</div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* 교장쌤 한마디 - 승인된 회원 + 관리자/스태프 */}
-        {user && (user.is_approved || user.role === 'admin' || user.role === 'staff') && (
-          <section className="room-section">
-            <h2>💬 교장쌤 한마디</h2>
-            <p className="section-description">중요 공지사항 및 정보</p>
-            <div className="room-list">
-              <div 
-                className="room-card notice-board"
-                onClick={handleThreadBoardClick}
-              >
-                <div className="room-icon">💬</div>
-                <div className="room-info">
-                  <h3>교장쌤 한마디</h3>
-                  <p>교장쌤의 소중한 한마디</p>
-                </div>
-                <div className="room-badge notice">NEW</div>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* VVIP 프로젝트반 */}
+        {/* 1. VVIP 프로젝트반 - 맨 위 (마케팅 강조) */}
         {user && (
-          <section className="room-section">
+          <section className="room-section vvip-section">
             <h2>💎 VVIP 프로젝트반</h2>
-            <p className="section-description"></p>
             <div className="room-list">
               {paidRooms.map(room => (
                 <div 
@@ -621,11 +544,11 @@ function ChatList({ user, onLogout }) {
           </section>
         )}
 
-        {/* 로그인 유도 */}
+        {/* 로그인 유도 - 비로그인 시 VVIP 자리에 */}
         {!user && (
-          <section className="room-section">
+          <section className="room-section vvip-section">
+            <h2>💎 VVIP 프로젝트반</h2>
             <div className="login-prompt">
-              <h2>🔒 VVIP 프로젝트반을 이용하시려면</h2>
               <p>로그인 후 이용하실 수 있습니다</p>
               <button 
                 className="prompt-login-button"
@@ -636,6 +559,75 @@ function ChatList({ user, onLogout }) {
             </div>
           </section>
         )}
+
+        {/* 2. 교장쌤 한마디 - 승인된 회원만 */}
+        {user && (user.is_approved || user.role === 'admin' || user.role === 'staff') && (
+          <section className="room-section compact-section">
+            <div className="room-list">
+              <div 
+                className="room-card notice-board"
+                onClick={handleThreadBoardClick}
+              >
+                <div className="room-icon">💬</div>
+                <div className="room-info">
+                  <h3>교장쌤 한마디</h3>
+                  <p>교장쌤의 소중한 한마디</p>
+                </div>
+                <div className="room-badge notice">NEW</div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* 3. 투자 교육 - 무료 미끼 */}
+        <section className="room-section compact-section">
+          <div className="room-list education-buttons">
+            <div 
+              className="room-card education-card"
+              onClick={() => navigate('/global-trading')}
+            >
+              <div className="room-icon">📊</div>
+              <div className="room-info">
+                <h3>오늘의 글로벌 매매</h3>
+                <p>주요 종목별 매매 방향</p>
+              </div>
+              <div className="room-badge global">시황</div>
+            </div>
+            
+            <div 
+              className="room-card education-card"
+              onClick={() => navigate('/tech-analysis')}
+            >
+              <div className="room-icon">📖</div>
+              <div className="room-info">
+                <h3>기술적분석</h3>
+                <p>초급 / 중급 / 고급 교육</p>
+              </div>
+              <div className="room-badge education">교육</div>
+            </div>
+          </div>
+        </section>
+
+        {/* 4. 교장쌤 소식방 - 맨 아래 */}
+        <section className="room-section compact-section">
+          <div className="room-list">
+            {freeRooms.map(room => (
+              <div 
+                key={room.id} 
+                className="room-card free-room"
+                onClick={() => handleRoomClick(room.id, true)}
+              >
+                <div className="room-icon">{getRoomIcon(room.room_type)}</div>
+                <div className="room-info">
+                  <h3>{room.name}</h3>
+                  <p>{room.description}</p>
+                </div>
+                <div className="room-badge">무료</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
       </div>
 
       {/* 로그인 모달 */}
