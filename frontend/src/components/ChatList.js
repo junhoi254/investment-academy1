@@ -218,18 +218,26 @@ function ChatList({ user, onLogout }) {
           const data = JSON.parse(event.data);
           console.log('📨 WebSocket 데이터:', data);
           
-          // type이 message인 경우 처리
-          if (data.type === 'message') {
+          // 모든 메시지 처리 (type 상관없이)
+          if (data.type === 'message' || data.content) {
             handleSignal({
-              content: data.content,
-              message_type: data.message_type,
-              user_name: data.user_name,
-              room_name: data.room_name
+              content: data.content || data.message?.content || '',
+              message_type: data.message_type || data.type,
+              user_name: data.user_name || data.message?.user_name,
+              room_name: data.room_name || data.message?.room_name
             });
           } else if (data.type === 'signal') {
             handleSignal({
               content: data.content,
               message_type: 'signal'
+            });
+          } else if (data.message) {
+            // data.message 객체가 있는 경우
+            handleSignal({
+              content: data.message.content || '',
+              message_type: data.message.message_type,
+              user_name: data.message.user_name,
+              room_name: data.message.room_name
             });
           }
         } catch (e) {
