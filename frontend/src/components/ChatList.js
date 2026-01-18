@@ -9,6 +9,7 @@ const WS_URL = API_URL.replace('http', 'ws');
 // 오디오 컨텍스트 (전역)
 let audioContext = null;
 let audioEnabled = false;
+let notificationSound = null;
 
 // 오디오 활성화 (사용자 클릭 필요)
 const enableAudio = () => {
@@ -18,6 +19,9 @@ const enableAudio = () => {
       if (audioContext.state === 'suspended') {
         audioContext.resume();
       }
+      // 알림 소리 미리 로드
+      notificationSound = new Audio('/notification.wav');
+      notificationSound.load();
       audioEnabled = true;
       console.log('🔊 오디오 활성화됨');
     } catch (e) {
@@ -26,39 +30,18 @@ const enableAudio = () => {
   }
 };
 
-// 사이렌 소리 생성 (Web Audio API)
+// 알림 소리 재생 (WAV 파일)
 const playAlertSound = () => {
   try {
-    if (!audioContext || audioContext.state === 'suspended') {
-      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    if (!notificationSound) {
+      notificationSound = new Audio('/notification.wav');
     }
-    
-    // 사이렌 소리 (상승-하강 반복)
-    const duration = 2;
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    oscillator.type = 'sine';
-    gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
-    
-    // 사이렌 주파수 변화
-    const now = audioContext.currentTime;
-    for (let i = 0; i < 4; i++) {
-      oscillator.frequency.setValueAtTime(600, now + i * 0.5);
-      oscillator.frequency.linearRampToValueAtTime(1000, now + i * 0.5 + 0.25);
-      oscillator.frequency.linearRampToValueAtTime(600, now + i * 0.5 + 0.5);
-    }
-    
-    gainNode.gain.setValueAtTime(0.4, now);
-    gainNode.gain.linearRampToValueAtTime(0, now + duration);
-    
-    oscillator.start(now);
-    oscillator.stop(now + duration);
-    
-    console.log('🔊 사이렌 재생');
+    notificationSound.currentTime = 0;
+    notificationSound.volume = 0.7;
+    notificationSound.play().catch(e => {
+      console.log('소리 재생 실패:', e);
+    });
+    console.log('🔊 알림음 재생');
   } catch (e) {
     console.log('소리 재생 실패:', e);
   }
