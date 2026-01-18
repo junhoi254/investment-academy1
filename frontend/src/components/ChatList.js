@@ -164,6 +164,14 @@ function ChatList({ user, onLogout }) {
     // 모든 메시지 카운트 증가
     setNewMessageCount(prev => prev + 1);
     
+    // 해당 방의 unread count 증가
+    if (data.room_id) {
+      setUnreadCounts(prev => ({
+        ...prev,
+        [data.room_id]: (prev[data.room_id] || 0) + 1
+      }));
+    }
+    
     // 시그널 메시지인지 확인 (시그널만 소리)
     const content = data.content || '';
     const isSignal = data.message_type === 'signal' || 
@@ -225,12 +233,14 @@ function ChatList({ user, onLogout }) {
               content: data.content || data.message?.content || '',
               message_type: data.message_type || data.type,
               user_name: data.user_name || data.message?.user_name,
-              room_name: data.room_name || data.message?.room_name
+              room_name: data.room_name || data.message?.room_name,
+              room_id: data.room_id || data.message?.room_id
             });
           } else if (data.type === 'signal') {
             handleSignal({
               content: data.content,
-              message_type: 'signal'
+              message_type: 'signal',
+              room_id: data.room_id
             });
           } else if (data.message) {
             // data.message 객체가 있는 경우
@@ -238,7 +248,8 @@ function ChatList({ user, onLogout }) {
               content: data.message.content || '',
               message_type: data.message.message_type,
               user_name: data.message.user_name,
-              room_name: data.message.room_name
+              room_name: data.message.room_name,
+              room_id: data.message.room_id
             });
           }
         } catch (e) {
