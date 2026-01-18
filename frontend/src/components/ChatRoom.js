@@ -1118,17 +1118,25 @@ function ChatRoom({ user, onLogin, onLogout }) {
               </div>
             )}
 
-            <input
-              type="text"
+            <textarea
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  if (newMessage.trim() && canSendMessage() && connected) {
+                    sendMessage(e);
+                  }
+                }
+              }}
               placeholder={
                 canSendMessage() 
-                  ? "메시지를 입력하세요..." 
+                  ? "메시지를 입력하세요... (Shift+Enter: 줄바꿈)" 
                   : "관리자와 서브관리자만 메시지를 보낼 수 있습니다"
               }
               disabled={!canSendMessage() || !connected}
               className="message-input"
+              rows={1}
             />
             <button 
               type="submit" 
