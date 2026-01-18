@@ -124,3 +124,16 @@ class Settings(Base):
     key = Column(String(100), unique=True, nullable=False)
     value = Column(String(500), nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class UserRoomRead(Base):
+    """사용자별 방 마지막 읽은 메시지 추적"""
+    __tablename__ = "user_room_reads"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    room_id = Column(Integer, ForeignKey("rooms.id"), nullable=False)
+    last_read_message_id = Column(Integer, default=0)  # 마지막으로 읽은 메시지 ID
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    user = relationship("User")
+    room = relationship("Room")

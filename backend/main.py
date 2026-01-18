@@ -310,6 +310,75 @@ async def get_free_rooms(db: Session = Depends(get_db)):
 async def get_paid_rooms(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     return db.query(models.Room).filter(models.Room.is_free == False).all()
 
+# ==================== 안읽은 메시지 API ====================
+
+@app.get("/api/rooms/unread")
+async def get_unread_counts(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """모든 방의 안읽은 메시지 개수 조회"""
+    from sqlalchemy import func
+    
+    result = {}
+    
+    # 사용자가 접근 가능한 방 목록 (유료방)
+    rooms = db.query(models.Room).filter(models.Room.is_free == False).all()
+    
+    for room in rooms:
+        # 사용자의 마지막 읽은 메시지 ID 조회
+        user_read = db.query(models.UserRoomRead).filter(
+            models.UserRoomRead.user_id == current_user.id,
+            models.UserRoomRead.room_id == room.id
+        ).first()
+        
+        last_read_id = user_read.last_read_message_id if user_read else 0
+        
+        # 마지막 읽은 메시지 이후의 메시지 개수
+        unread_count = db.query(func.count(models.Message.id)).filter(
+            models.Message.room_id == room.id,
+            models.Message.id > last_read_id
+        ).scalar()
+        
+        result[room.id] = unread_count
+    
+    return result
+
+@app.post("/api/rooms/{room_id}/read")
+async def mark_room_as_read(
+    room_id: int, 
+    current_user: models.User = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    """특정 방을 읽음으로 표시"""
+    from sqlalchemy import func
+    
+    # 해당 방의 가장 최근 메시지 ID 조회
+    latest_message = db.query(func.max(models.Message.id)).filter(
+        models.Message.room_id == room_id
+    ).scalar()
+    
+    if latest_message is None:
+        latest_message = 0
+    
+    # 기존 레코드 확인
+    user_read = db.query(models.UserRoomRead).filter(
+        models.UserRoomRead.user_id == current_user.id,
+        models.UserRoomRead.room_id == room_id
+    ).first()
+    
+    if user_read:
+        user_read.last_read_message_id = latest_message
+        user_read.updated_at = datetime.now()
+    else:
+        user_read = models.UserRoomRead(
+            user_id=current_user.id,
+            room_id=room_id,
+            last_read_message_id=latest_message
+        )
+        db.add(user_read)
+    
+    db.commit()
+    
+    return {"success": True, "room_id": room_id, "last_read_message_id": latest_message}
+
 @app.post("/api/rooms", response_model=schemas.RoomResponse)
 async def create_room(room_data: schemas.RoomCreate, admin: models.User = Depends(get_admin_user), db: Session = Depends(get_db)):
     new_room = models.Room(**room_data.dict())

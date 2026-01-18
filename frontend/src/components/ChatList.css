@@ -207,6 +207,24 @@
   background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
 }
 
+/* 안읽은 메시지 배지 */
+.unread-badge {
+  background: #ef4444;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  min-width: 28px;
+  text-align: center;
+  animation: pulse-badge 2s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
 .login-prompt {
   text-align: center;
   background: #1a1a1a;

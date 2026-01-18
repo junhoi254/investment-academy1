@@ -132,6 +132,7 @@ function ChatList({ user, onLogout }) {
   const [showSignalPopup, setShowSignalPopup] = useState(false);
   const [newMessageCount, setNewMessageCount] = useState(0);  // 새 메시지 개수
   const [wsConnected, setWsConnected] = useState(false);  // 연결 상태
+  const [unreadCounts, setUnreadCounts] = useState({});  // 방별 안읽은 메시지 개수
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
 
@@ -345,16 +346,52 @@ function ChatList({ user, onLogout }) {
         }
       });
       setPaidRooms(response.data);
+      // 유료방 로드 후 안읽은 메시지 개수도 로드
+      loadUnreadCounts();
     } catch (error) {
       console.error('유료방 로딩 실패:', error);
     }
   };
 
-  const handleRoomClick = (roomId, isFree) => {
+  // 안읽은 메시지 개수 로드
+  const loadUnreadCounts = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      
+      const response = await axios.get(`${API_URL}/api/rooms/unread`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      setUnreadCounts(response.data);
+    } catch (error) {
+      console.error('안읽은 메시지 로딩 실패:', error);
+    }
+  };
+
+  const handleRoomClick = async (roomId, isFree) => {
     if (!isFree && !user) {
       setShowLogin(true);
       return;
     }
+    
+    // 유료방 클릭 시 읽음 표시
+    if (!isFree && user) {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.post(`${API_URL}/api/rooms/${roomId}/read`, {}, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        // unread count 업데이트
+        setUnreadCounts(prev => ({...prev, [roomId]: 0}));
+      } catch (error) {
+        console.error('읽음 표시 실패:', error);
+      }
+    }
+    
     navigate(`/chat/${roomId}`);
   };
 
@@ -528,7 +565,11 @@ function ChatList({ user, onLogout }) {
                     <h3>{room.name}</h3>
                     <p>{room.description}</p>
                   </div>
-                  <div className="room-badge premium">프리미엄</div>
+                  {unreadCounts[room.id] > 0 ? (
+                    <div className="unread-badge">{unreadCounts[room.id] > 99 ? '99+' : unreadCounts[room.id]}</div>
+                  ) : (
+                    <div className="room-badge premium">프리미엄</div>
+                  )}
                 </div>
               ))}
             </div>
