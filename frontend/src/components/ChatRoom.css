@@ -233,6 +233,7 @@
   word-wrap: break-word;
   color: #ffffff;
   line-height: 1.5;
+  white-space: pre-wrap;
 }
 
 .message.own .message-content {
