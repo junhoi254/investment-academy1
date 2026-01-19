@@ -52,6 +52,15 @@ app.add_middleware(
 # 업로드된 파일 서빙
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
+# 헬스체크 API (서버 깨우기용)
+@app.get("/health")
+async def health_check():
+    return {"status": "ok", "message": "Server is running"}
+
+@app.get("/")
+async def root():
+    return {"message": "Investment Academy API", "status": "running"}
+
 # JWT 설정
 SECRET_KEY = os.getenv("SECRET_KEY", "investment-academy-secret-key-2024")
 ALGORITHM = "HS256"
