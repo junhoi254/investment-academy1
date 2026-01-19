@@ -3,8 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './ChatRoom.css';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-const WS_URL = process.env.REACT_APP_WS_URL || 'ws://localhost:8000';
+const API_URL = process.env.REACT_APP_API_URL || 'https://investment-academy1-backend.onrender.com';
+const WS_URL = process.env.REACT_APP_WS_URL || 'wss://investment-academy1-backend.onrender.com';
 
 // 오디오 컨텍스트 (전역)
 let audioContext = null;
