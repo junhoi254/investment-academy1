@@ -709,6 +709,15 @@ function ChatRoom({ user, onLogin, onLogout }) {
   };
 
   const renderMessage = (message, query = '') => {
+    // 파일 URL 처리 (이미 전체 URL이면 그대로, 아니면 API_URL 붙이기)
+    const getFileUrl = (fileUrl) => {
+      if (!fileUrl) return '';
+      if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+        return fileUrl;
+      }
+      return `${API_URL}${fileUrl}`;
+    };
+
     if (message.message_type === 'image') {
       return (
         <div className="message-image">
@@ -722,9 +731,13 @@ function ChatRoom({ user, onLogin, onLogout }) {
             </button>
           )}
           <img 
-            src={`${API_URL}${message.file_url}`} 
+            src={getFileUrl(message.file_url)} 
             alt={message.file_name}
-            onClick={() => window.open(`${API_URL}${message.file_url}`, '_blank')}
+            onClick={() => window.open(getFileUrl(message.file_url), '_blank')}
+            onError={(e) => {
+              console.log('이미지 로드 실패:', message.file_url);
+              e.target.style.display = 'none';
+            }}
           />
           <div className="message-time">{formatTime(message.created_at)}</div>
         </div>
@@ -742,7 +755,7 @@ function ChatRoom({ user, onLogin, onLogout }) {
             </button>
           )}
           <a 
-            href={`${API_URL}${message.file_url}`} 
+            href={getFileUrl(message.file_url)} 
             download={message.file_name}
             target="_blank"
             rel="noopener noreferrer"
