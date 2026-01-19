@@ -659,7 +659,9 @@ async def websocket_chat(websocket: WebSocket, room_id: int, token: str):
                 room_id=room_id,
                 user_id=user_id,
                 content=data.get("message"),
-                message_type=data.get("type", "text")
+                message_type=data.get("type", "text"),
+                file_url=data.get("file_url"),
+                file_name=data.get("file_name")
             )
             db.add(message)
             db.commit()
@@ -669,11 +671,14 @@ async def websocket_chat(websocket: WebSocket, room_id: int, token: str):
             await manager.send_message({
                 "type": "message",
                 "id": message.id,
+                "room_id": room_id,
                 "user_id": user.id,
                 "user_name": user.name,
                 "user_role": user.role,
                 "content": message.content,
                 "message_type": message.message_type,
+                "file_url": message.file_url,
+                "file_name": message.file_name,
                 "timestamp": message.created_at.isoformat()
             }, str(room_id))
             
